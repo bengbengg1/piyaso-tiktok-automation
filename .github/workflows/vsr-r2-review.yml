@@ -1,0 +1,111 @@
+name: Piyaso - Gercek R2 videosunda VSR testi (manuel)
+
+on:
+  workflow_dispatch:
+    inputs:
+      source_key:
+        description: 'R2 nesne yolu (varsayilan: daha once yuklenen deneme videosu)'
+        required: true
+        type: string
+        default: 'published/piyaso/2026-10-30/01_0001/video.mp4.mov'
+      region:
+        description: 'Yazi alani: x,y,genislik,yukseklik (0 ile 1 arasi)'
+        required: true
+        type: string
+        default: '0.30,0.60,0.42,0.09'
+      seconds:
+        description: 'Deneme uzunlugu: 0.5-10 saniye'
+        required: true
+        type: string
+        default: '1.5'
+      run_ai:
+        description: 'Isaretlenirse gercek STTN modeli calisir; aksi halde yalnizca maske onizlemesi'
+        required: true
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+concurrency:
+  group: piyaso-vsr-r2-private-review
+  cancel-in-progress: false
+
+jobs:
+  review:
+    runs-on: ubuntu-latest
+    timeout-minutes: 180
+    env:
+      R2_ENDPOINT: ${{ secrets.R2_ENDPOINT }}
+      R2_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
+      R2_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
+      R2_ASSETS_BUCKET: piyaso-tiktok-assets
+      SOURCE_KEY: ${{ inputs.source_key }}
+      REGION: ${{ inputs.region }}
+      SECONDS: ${{ inputs.seconds }}
+      RUN_AI: ${{ inputs.run_ai }}
+    steps:
+      - name: Kodlari getir
+        uses: actions/checkout@v4
+
+      - name: Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: FFmpeg ve minimum Python kutuphaneleri
+        shell: bash
+        run: |
+          set -euo pipefail
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq ffmpeg libegl1 libgl1 libopengl0 libglib2.0-0
+          python -m pip install -r requirements.txt
+
+      - name: Kaynak ve maske degerlerini dogrula
+        shell: bash
+        run: |
+          python - <<'PY'
+          import os
+          from vsr_r2_review import validate_source_key
+          from preview_text_removal import parse_region
+          key = validate_source_key(os.environ['SOURCE_KEY'])
+          box = parse_region(os.environ['REGION'])
+          sec = float(os.environ['SECONDS'])
+          assert 0.5 <= sec <= 10, 'Deneme suresi 0.5-10 saniye olmali'
+          print('Onayli R2 kaynak yolu:', key)
+          print('Yazi maskesi:', box)
+          PY
+
+      - name: Hazir VSR modelini yalnizca gercek AI denemesinde kur
+        if: ${{ inputs.run_ai }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -s get_vsr.sh
+          test -s setup_vsr_cpu.sh
+          mkdir -p scripts vendor
+          cp get_vsr.sh scripts/get_vsr.sh
+          cp setup_vsr_cpu.sh scripts/setup_vsr_cpu.sh
+          chmod +x scripts/get_vsr.sh scripts/setup_vsr_cpu.sh
+          bash scripts/setup_vsr_cpu.sh
+          test -s vendor/video-subtitle-remover/backend/models/sttn-auto/infer_model.pth
+          export VSR_HOME="$GITHUB_WORKSPACE/vendor/video-subtitle-remover"
+          python -c 'import ai_text_removal as a; print(a.ensure_vsr_weights())'
+
+      - name: R2 kaynagindan ozel inceleme ciktisi olustur
+        shell: bash
+        run: |
+          set -euo pipefail
+          args=(--source-key "$SOURCE_KEY" --region "$REGION" --seconds "$SECONDS" --review-id "$GITHUB_RUN_ID")
+          if [ "$RUN_AI" = 'true' ]; then args+=(--run-ai); fi
+          python vsr_r2_review.py "${args[@]}"
+
+      - name: Sonucu acikla (yayin yapilmaz)
+        if: ${{ success() }}
+        shell: bash
+        run: |
+          echo '### Piyaso VSR sonucu' >> "$GITHUB_STEP_SUMMARY"
+          echo "**R2 bucket:** piyaso-tiktok-assets" >> "$GITHUB_STEP_SUMMARY"
+          echo "**Ozel klasor:** reviews/vsr/$(date -u +%Y%m%d)/${GITHUB_RUN_ID}/" >> "$GITHUB_STEP_SUMMARY"
+          echo 'Ilk calistirmada mask.png ve original.png; run_ai=true ise cleaned.mp4 ve before_after.png da kaydedilir.' >> "$GITHUB_STEP_SUMMARY"
+          echo '**Buffer / TikTok paylasimi KAPALI.** Yapay zeka sonucu insan incelemesi olmadan yayinlanmaz.' >> "$GITHUB_STEP_SUMMARY"
