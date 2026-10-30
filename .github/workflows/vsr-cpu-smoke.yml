@@ -32,6 +32,7 @@ jobs:
           mkdir -p scripts vendor
           cp get_vsr.sh scripts/get_vsr.sh
           cp setup_vsr_cpu.sh scripts/setup_vsr_cpu.sh
+          chmod +x scripts/get_vsr.sh scripts/setup_vsr_cpu.sh
 
       - name: Install FFmpeg and VSR STTN
         shell: bash
