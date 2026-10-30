@@ -42,7 +42,7 @@ jobs:
       R2_ASSETS_BUCKET: piyaso-tiktok-assets
       SOURCE_KEY: ${{ inputs.source_key }}
       REGION: ${{ inputs.region }}
-      SECONDS: ${{ inputs.seconds }}
+      CLIP_SECONDS: ${{ inputs.seconds }}
       RUN_AI: ${{ inputs.run_ai }}
     steps:
       - name: Kodlari getir
@@ -70,7 +70,7 @@ jobs:
           from preview_text_removal import parse_region
           key = validate_source_key(os.environ['SOURCE_KEY'])
           box = parse_region(os.environ['REGION'])
-          sec = float(os.environ['SECONDS'])
+          sec = float(os.environ['CLIP_SECONDS'])
           assert 0.5 <= sec <= 10, 'Deneme suresi 0.5-10 saniye olmali'
           print('Onayli R2 kaynak yolu:', key)
           print('Yazi maskesi:', box)
@@ -96,7 +96,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          args=(--source-key "$SOURCE_KEY" --region "$REGION" --seconds "$SECONDS" --review-id "$GITHUB_RUN_ID")
+          args=(--source-key "$SOURCE_KEY" --region "$REGION" --seconds "$CLIP_SECONDS" --review-id "$GITHUB_RUN_ID")
           if [ "$RUN_AI" = 'true' ]; then args+=(--run-ai); fi
           python vsr_r2_review.py "${args[@]}"
 
