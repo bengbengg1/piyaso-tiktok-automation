@@ -1,0 +1,110 @@
+# Piyaso - Gercek VSR yapay zeka testi
+# TikTok veya Buffer'a yayin yapmaz.
+
+name: Piyaso VSR real AI smoke test (manual / CPU)
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  vsr:
+    runs-on: ubuntu-latest
+    timeout-minutes: 180
+
+    steps:
+      - name: Checkout Piyaso
+        uses: actions/checkout@v4
+
+      - name: Prepare Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Restore installer paths
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -s get_vsr.sh
+          test -s setup_vsr_cpu.sh
+          mkdir -p scripts vendor
+          cp get_vsr.sh scripts/get_vsr.sh
+          cp setup_vsr_cpu.sh scripts/setup_vsr_cpu.sh
+
+      - name: Install FFmpeg and VSR STTN
+        shell: bash
+        run: |
+          set -euo pipefail
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq ffmpeg
+          bash scripts/setup_vsr_cpu.sh
+          test -s vendor/video-subtitle-remover/backend/models/sttn-auto/infer_model.pth
+
+      - name: Make synthetic video with text
+        shell: bash
+        run: |
+          set -euo pipefail
+          ffmpeg -hide_banner -loglevel error -y \
+            -f lavfi -i 'color=c=blue:s=360x640:r=8:d=3' \
+            -vf "drawtext=fontfile=/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf:text='test text':fontcolor=white:fontsize=30:x=30:y=80" \
+            -an -c:v libx264 -pix_fmt yuv420p /tmp/piyaso-vsr-input.mp4
+
+      - name: Run REAL pretrained VSR STTN inference
+        shell: bash
+        run: |
+          set -euo pipefail
+          "$GITHUB_WORKSPACE/.vsr-venv/bin/python" \
+            "$GITHUB_WORKSPACE/vendor/video-subtitle-remover/backend/main.py" \
+            -i /tmp/piyaso-vsr-input.mp4 \
+            -o /tmp/piyaso-vsr-clean.mp4 \
+            -c 65 150 15 330 \
+            --inpaint-mode sttn-auto
+
+          test -s /tmp/piyaso-vsr-clean.mp4
+
+          ffprobe -hide_banner -v error \
+            -select_streams v:0 \
+            -show_entries stream=width,height \
+            -of csv=p=0 /tmp/piyaso-vsr-clean.mp4
+
+      - name: Verify video decodes and region changed
+        shell: bash
+        run: |
+          "$GITHUB_WORKSPACE/.vsr-venv/bin/python" - <<'PY'
+          import cv2
+          import numpy as np
+
+          a = cv2.VideoCapture('/tmp/piyaso-vsr-input.mp4')
+          b = cv2.VideoCapture('/tmp/piyaso-vsr-clean.mp4')
+
+          ok_a, x = a.read()
+          ok_b, y = b.read()
+
+          assert ok_a and ok_b, 'Video could not be decoded'
+          assert x.shape == y.shape, 'Video dimensions differ'
+
+          change = float(
+              np.abs(
+                  x.astype('float32') -
+                  y.astype('float32')
+              ).mean()
+          )
+
+          print('Mean pixel change:', change)
+
+          assert change > 0.25, \
+              'VSR did not materially change pixels'
+          PY
+
+      - name: Upload evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: vsr-synthetic-smoke
+          path: |
+            /tmp/piyaso-vsr-input.mp4
+            /tmp/piyaso-vsr-clean.mp4
+          if-no-files-found: warn
+          retention-days: 1
