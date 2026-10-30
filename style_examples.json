@@ -1,0 +1,213 @@
+{
+  "instructions": "Bu dosyaya kullanicinin paylastigi ornek cumleleri oldugu gibi, kendi kategorileriyle ekle. Ornekler incelemek icindir: birebir kopyalamak yerine benzer tonda yeni ozgun metinler yaz.",
+  "allowed_facts": [
+    "Piyaso, Antalya merkezli otomobil topluluğu ve sosyalleşme temalı uygulamadır.",
+    "Piyaso içinde araç özelleştirme ve topluluk özellikleri proje kapsamındadır.",
+    "Uygulamanın hedeflenen yerel dilinde Kültür, Konyaaltı, Lara, Işıklar ve Bozkan geçebilir.",
+    "Paylaşım ve konum özellikleri reklam edilmeden önce gerçek uygulama davranışı ve izinler doğrulanmalıdır."
+  ],
+  "style_rules": [
+    "Doğal Türkçe TikTok jargonu kullan; yarı ciddi SON DAKİKA, şaşırma, takılma, ex/next, tur atma mizahını çeşitlendir.",
+    "Kısa ve vurucu yaz; ekrandaki ana yazı 45–70 karakter tercihen 2–3 satır, caption hashtaglerle toplam 150 karakteri geçmesin.",
+    "Antalya ve yerel mahalle adlarını kullan ama her videoya lokasyon zorunlu değil.",
+    "Kaynak örneklerin hiçbirini kelimesi kelimesine kopyalama ve sırf eş anlamlılarla yeniden yazma.",
+    "Reklam metnini kaynak videoya bağla: araba, karaoke, şarkı, lokal piyaso veya ilişki mizahı.",
+    "İnsanları takip/stalk etme, konumlarını izinsiz görme, özel hayatlarına erişme gibi gerçek olmayan veya mahremiyeti ihlal eden özellikler uydurma.",
+    "Kesin kanıtsız sonuçlar vaat etme, belirli bireylerin konumlarını veya ilişkilerini bildiğini ima etme.",
+    "Reklamların dili genç, şakacı olsun; küçümseyici, nefret dolu veya taciz edici söylem kullanma.",
+    "Ekran yazısı ile TikTok açıklaması aynı metni aynen tekrar etmesin; marka adı Piyaso en az birinde anılsın."
+  ],
+  "examples": {
+    "araba": [
+      "Ne! Arabayla 2 saat boyunca hiçbir şey yapmadan müzik dinleyerek turlayacak mıyız? Tamam hemen iniyorum 🤩",
+      "Neee konyaaltında arabayla sabaha kadar hiçbir şey yapmadan müzik dinleyip turlayacak mıyız? Varım 🥳"
+    ],
+    "karaoke": [],
+    "sarki": [],
+    "genel": [
+      "PİYASO UYGULAMASI ÇIKTIĞINDAN BERİ ANLIK ANTALYA 🫣😎",
+      "Uygulamayı keşfettikten sonra insanların tatile gitmeyip PİYASO YAPTIĞINI ANLADIK! 🤫🤯😎",
+      "SON DAKİKA‼️ ARTIK PİYASO YAPARKEN İNSANLAR “PİYASO UYGULAMASI” KULLANIYOR ❗",
+      "Evet bizde ilk gördüğümüzde ülkede petrol bitti sandık ama insanlar uygulamadan tanışıp piyaso yapmaya buraya gelmiş 💀💀💀",
+      "Millet kalori hesaplama uygulaması kullanırken biz piyaso nerde onu bulabildiğimiz uygulama kullanıyoruz ✌🏻🌹😎",
+      "Biz daha iyi PİYASO yapalım diye uygulama çıkartmışlar 🤫🤫",
+      "Sizi bilmem ama ben pazartesi sabahı işi çarşamba akşamı kahvesi cuma namazı cumartesi piyasosu pazar kahvaltısıyım",
+      "Tamam piyasoya çıkmam yanlıştı ama sonuçta şunu belirtmek isterim ki ben oraya bacımla gittim bacımlaaa",
+      "Hakkımızda çıkan piyaso yapıyorlar dedikodusu yalandır, çünkü biz sadece piyaso yapmıyoruz, piyasoya yön veriyoruz iyi günler ;)",
+      "biz aile terbiyesi almış ama piyasoya çıkınca ortalığı birbirine katan muhafazakar ailenin kızlarıyız.",
+      "Para bizi bozmaz ama yakın kız arkadaşlarla piyaso biraz etkiler"
+    ],
+    "yerel": [
+      "CADDE’de BEĞENDİĞİMİZ ÇOCUKLARI BU UYGULAMADA BULDUKK 🤫",
+      "PİYASONUN, CADDENİN NABZINI TUTACAĞINIZ O UYGULAMA ÇIKTI.",
+      "Allah sonunda lise arkadaşları ile Konyaaltı piyasosu nasip etti 🙏🏻",
+      "piyaso yapmayı onlinea taşıyan samsunlular",
+      "Laracılar nerdesiniz??? baba kalptesiniz hadi gelsenize"
+    ],
+    "iliski": [
+      "Arkadaşlar piyaso dediğiniz bu mu oluyor? (Bekar bir arkadaş merak ediyor da 🫣)",
+      "Kaçanı kovalamayız, istesek kaçırmayız zaten. Piyaso uygulamasından bizi bulurlar.",
+      "Konserde kesiştiğim kızları karıştırdım ama neyse ki “Piyaso” uygulamasında hepsini buldum.",
+      "Kızlar koşun! Artık exi, nexti, fav exi, varexi, durexi, rolexi, kotexi takip etmek çok kolay indirsenize uygulamayı.",
+      "“Piyaso” uygulamasında iki sarışın konum açık post atmış. Tesadüfen karşılaşmaya gidiyoruz.",
+      "Kızlar bizi ghostluyo bizde piyaso uygulaması yaptık. Kısmandırmak diyince bizdir 😁🤞🏻",
+      "Piyaso yaparken hem exi hem nexti bulabileceğimiz uygulamayı sonunda yapmışlar çok şükür 🙏🏻🙏🏻",
+      "Exin engellediği için stalklayamıyor musun? Uygulamayı indir biz senin için uygulamadan stalklarız.",
+      "exleri unutucaz diye tur atmaktan etiket olduk 🤝",
+      "Piyaso diye uygulama yapma işi (manitalarınızın burada kimlerle olup olmadığını görürsünüz kızlar) 💅"
+    ]
+  },
+  "voice_profile": {
+    "vibe": "Antalya yerel piyaso/turlama kültürü; samimi, hafif arsız, arkadaş sohbeti gibi, ironik, dramatik, şaşırmalı, kısa ve paylaşılabilir",
+    "motifs": [
+      "SON DAKİKA",
+      "Neee ... mı?",
+      "Ex/next/ghost",
+      "son tur diye çıkıp saatlerce dönme",
+      "araba içinde müzik/karaoke",
+      "Konyaaltı/Lara/Kültür/Işıklar/Bozkan",
+      "sanki olay olmuş gibi abartılı giriş",
+      "bacımla çıktım tarzı absürt savunma"
+    ],
+    "locations": [
+      "Antalya",
+      "Kültür",
+      "Konyaaltı",
+      "Lara",
+      "Işıklar",
+      "Bozkan"
+    ],
+    "spelling": "Ekran yazılarında PİYASO veya Piyaso, slogan içinde piyaso yapmak (eylem). Yer isimleri kullanıcı yazımıyla korunur.",
+    "do_not_claim": [
+      "Kullanıcının rızası olmadan konumunu görme veya birini takip etme",
+      "Exlerin hareketlerini, ilişkilerini veya konumlarını gözetleme",
+      "Uygulamanın kullanıcıya belirli bir kişiyi bulma garantisi verdiği",
+      "Bütün Antalya uygulamayı kullanıyor gibi sayısal/kesin iddia",
+      "Uygulama içinde doğrulanmamış özellik ve gizli veri erişimi"
+    ],
+    "tone": "Reklam broşürü gibi değil; arkadaş grubu TikTok captionı gibi. Her cümleye uygulama adını zorla sıkıştırma; metin ve açıklama birlikte marka mesajını verir.",
+    "quality_note": "Kullanıcı eski üretilen \"Bi tur daha dedik Antalya turu çıktı\", \"Konyaaltı biz Konyaaltını ezberledik\" örneklerini anlamsız buldu. Her cümle bir durum, dedikodu, flört veya espri ve bunun içinde doğal, mantıklı Piyaso bağlantısı taşımalı. Sırf Antalya, araba, tur gibi anahtar kelimeleri bir araya getirip slogan üretme. Yerel mahalleleri yalnızca uygun yerlerde kullan."
+  },
+  "user_supplied_examples": [
+    {
+      "category": "genel",
+      "text": "PİYASO UYGULAMASI ÇIKTIĞINDAN BERİ ANLIK ANTALYA 🫣😎"
+    },
+    {
+      "category": "genel",
+      "text": "Uygulamayı keşfettikten sonra insanların tatile gitmeyip PİYASO YAPTIĞINI ANLADIK! 🤫🤯😎"
+    },
+    {
+      "category": "genel",
+      "text": "SON DAKİKA‼️ ARTIK PİYASO YAPARKEN İNSANLAR “PİYASO UYGULAMASI” KULLANIYOR ❗"
+    },
+    {
+      "category": "iliski",
+      "text": "Arkadaşlar piyaso dediğiniz bu mu oluyor? (Bekar bir arkadaş merak ediyor da 🫣)"
+    },
+    {
+      "category": "iliski",
+      "text": "Kaçanı kovalamayız, istesek kaçırmayız zaten. Piyaso uygulamasından bizi bulurlar."
+    },
+    {
+      "category": "genel",
+      "text": "Evet bizde ilk gördüğümüzde ülkede petrol bitti sandık ama insanlar uygulamadan tanışıp piyaso yapmaya buraya gelmiş 💀💀💀"
+    },
+    {
+      "category": "iliski",
+      "text": "Konserde kesiştiğim kızları karıştırdım ama neyse ki “Piyaso” uygulamasında hepsini buldum."
+    },
+    {
+      "category": "iliski",
+      "text": "Kızlar koşun! Artık exi, nexti, fav exi, varexi, durexi, rolexi, kotexi takip etmek çok kolay indirsenize uygulamayı."
+    },
+    {
+      "category": "iliski",
+      "text": "“Piyaso” uygulamasında iki sarışın konum açık post atmış. Tesadüfen karşılaşmaya gidiyoruz."
+    },
+    {
+      "category": "iliski",
+      "text": "Kızlar bizi ghostluyo bizde piyaso uygulaması yaptık. Kısmandırmak diyince bizdir 😁🤞🏻"
+    },
+    {
+      "category": "iliski",
+      "text": "Piyaso yaparken hem exi hem nexti bulabileceğimiz uygulamayı sonunda yapmışlar çok şükür 🙏🏻🙏🏻"
+    },
+    {
+      "category": "iliski",
+      "text": "Exin engellediği için stalklayamıyor musun? Uygulamayı indir biz senin için uygulamadan stalklarız."
+    },
+    {
+      "category": "genel",
+      "text": "Millet kalori hesaplama uygulaması kullanırken biz piyaso nerde onu bulabildiğimiz uygulama kullanıyoruz ✌🏻🌹😎"
+    },
+    {
+      "category": "yerel",
+      "text": "CADDE’de BEĞENDİĞİMİZ ÇOCUKLARI BU UYGULAMADA BULDUKK 🤫"
+    },
+    {
+      "category": "yerel",
+      "text": "PİYASONUN, CADDENİN NABZINI TUTACAĞINIZ O UYGULAMA ÇIKTI."
+    },
+    {
+      "category": "genel",
+      "text": "Biz daha iyi PİYASO yapalım diye uygulama çıkartmışlar 🤫🤫"
+    },
+    {
+      "category": "yerel",
+      "text": "Allah sonunda lise arkadaşları ile Konyaaltı piyasosu nasip etti 🙏🏻"
+    },
+    {
+      "category": "genel",
+      "text": "Sizi bilmem ama ben pazartesi sabahı işi çarşamba akşamı kahvesi cuma namazı cumartesi piyasosu pazar kahvaltısıyım"
+    },
+    {
+      "category": "genel",
+      "text": "Tamam piyasoya çıkmam yanlıştı ama sonuçta şunu belirtmek isterim ki ben oraya bacımla gittim bacımlaaa"
+    },
+    {
+      "category": "genel",
+      "text": "Hakkımızda çıkan piyaso yapıyorlar dedikodusu yalandır, çünkü biz sadece piyaso yapmıyoruz, piyasoya yön veriyoruz iyi günler ;)"
+    },
+    {
+      "category": "genel",
+      "text": "biz aile terbiyesi almış ama piyasoya çıkınca ortalığı birbirine katan muhafazakar ailenin kızlarıyız."
+    },
+    {
+      "category": "iliski",
+      "text": "exleri unutucaz diye tur atmaktan etiket olduk 🤝"
+    },
+    {
+      "category": "araba",
+      "text": "Ne! Arabayla 2 saat boyunca hiçbir şey yapmadan müzik dinleyerek turlayacak mıyız? Tamam hemen iniyorum 🤩"
+    },
+    {
+      "category": "yerel",
+      "text": "piyaso yapmayı onlinea taşıyan samsunlular"
+    },
+    {
+      "category": "genel",
+      "text": "Para bizi bozmaz ama yakın kız arkadaşlarla piyaso biraz etkiler"
+    },
+    {
+      "category": "araba",
+      "text": "Neee konyaaltında arabayla sabaha kadar hiçbir şey yapmadan müzik dinleyip turlayacak mıyız? Varım 🥳"
+    },
+    {
+      "category": "yerel",
+      "text": "Laracılar nerdesiniz??? baba kalptesiniz hadi gelsenize"
+    },
+    {
+      "category": "iliski",
+      "text": "Piyaso diye uygulama yapma işi (manitalarınızın burada kimlerle olup olmadığını görürsünüz kızlar) 💅"
+    }
+  ],
+  "explicitly_approved_reference_examples": [
+    "Kızlar Konyaaltı'nda kesiştiğim çocuğu 3 gündür arıyorum, meğer Piyaso'da post atıyormuş 😭🫣",
+    "SON DAKİKA‼️ ANTALYA'DA PİYASO YAPMAK YETMİYORMUŞ Bİ DE UYGULAMASINI ÇIKARMIŞLAR 💀",
+    "Arkadaşlar eskiden piyaso yaparken insanlarla tanışıyorduk, şimdi tanıştıklarımızı Piyaso'da görüyoruz. Teknoloji çok ilerledi 😭",
+    "Kızlar koşun, Konyaaltı'nda göz göze geldiğiniz çocukları bulamadınız diye üzülmeyin. Piyaso diye uygulama çıkmış 🤫",
+    "Antalya'da millet birbirinin Instagram'ını istemeyi bırakmış, Piyaso'n var mı diye soruyormuş 😭",
+    "Piyaso'da beğendiğim çocuğun postunu gördüm, şimdi arkadaşlarımla tesadüfen karşılaşma organizasyonu yapıyoruz 🫣💅"
+  ]
+}

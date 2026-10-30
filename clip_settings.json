@@ -1,0 +1,32 @@
+{
+  "defaults": {
+    "cover_rectangles": [],
+    "headline_box": {
+      "x": 0.06,
+      "y": 0.085,
+      "width": 0.88,
+      "height": 0.245
+    },
+    "start_seconds": "auto"
+  },
+  "videos": {
+    "araba_ornek.mp4": {
+      "text_mode": "manual",
+      "cover_rectangles": [
+        {
+          "x": 0.08,
+          "y": 0.31,
+          "width": 0.84,
+          "height": 0.07
+        }
+      ]
+    },
+    "karaoke_ornek.mp4": {
+      "text_mode": "manual",
+      "cover_rectangles": []
+    },
+    "sarki_ornek.mp4": {
+      "text_mode": "manual"
+    }
+  }
+}

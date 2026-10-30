@@ -1,0 +1,3 @@
+-r requirements.txt
+# Only required for automatic on-screen caption detection. Heavy CPU dependencies.
+easyocr==1.7.2

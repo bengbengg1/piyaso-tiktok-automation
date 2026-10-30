@@ -1,0 +1,8 @@
+name = "piyaso-tiktok-media"
+main = "src/index.js"
+compatibility_date = "2026-10-30"
+workers_dev = true
+
+[[r2_buckets]]
+binding = "MEDIA"
+bucket_name = "piyaso-tiktok-assets"

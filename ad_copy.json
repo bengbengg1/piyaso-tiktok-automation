@@ -1,0 +1,42 @@
+{
+  "araba": [
+    {
+      "headline": "Araba tutkusu sadece sürmekle bitmez",
+      "caption": "Araç tutkunlarının buluşma noktası Piyaso. Garajını keşfet!"
+    },
+    {
+      "headline": "Senin hayalindeki araba hangisi?",
+      "caption": "Otomobil tutkunları Piyaso'da buluşuyor. Sen de keşfet!"
+    },
+    {
+      "headline": "Her arabanın bir hikâyesi var",
+      "caption": "Otomobil dünyası ve topluluk Piyaso'da. #garaj"
+    }
+  ],
+  "karaoke": [
+    {
+      "headline": "Araba içi konser ekibi burada mı?",
+      "caption": "Yolculuk, eğlence ve otomobil sohbeti. Piyaso'yu keşfet!"
+    },
+    {
+      "headline": "Yolculuğun en güzel yanı ekip",
+      "caption": "Yol arkadaşlarınla otomobil tutkunu insanları Piyaso'da keşfet."
+    }
+  ],
+  "sarki": [
+    {
+      "headline": "Bu şarkı arabada başka güzel",
+      "caption": "Yollarda seninle aynı tutkuyu paylaşan insanlarla Piyaso'da tanış."
+    },
+    {
+      "headline": "Yol müziği hazır, peki ya ekip?",
+      "caption": "Piyaso ile otomobil topluluğunu keşfet."
+    }
+  ],
+  "genel": [
+    {
+      "headline": "Otomobil tutkunları burada",
+      "caption": "Araçlar, topluluk ve yeni keşifler. Piyaso'yu keşfet!"
+    }
+  ]
+}

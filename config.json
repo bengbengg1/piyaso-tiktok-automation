@@ -1,0 +1,59 @@
+{
+  "app_name": "Piyaso",
+  "width": 1080,
+  "height": 1920,
+  "duration_seconds": 18,
+  "fps": 30,
+  "background_dir": "assets/backgrounds",
+  "app_recordings": {
+    "default": "assets/app_recording.mp4",
+    "directory": "assets/app_recordings"
+  },
+  "output_dir": "output",
+  "weekly_plan": {
+    "monday": 2,
+    "tuesday": 2,
+    "wednesday": 2,
+    "thursday": 2,
+    "friday": 3,
+    "saturday": 3,
+    "sunday": 3
+  },
+  "posting_times": {
+    "2": [
+      "13:00",
+      "20:00"
+    ],
+    "3": [
+      "12:30",
+      "17:00",
+      "20:30"
+    ]
+  },
+  "text_detection": {
+    "mode": "auto",
+    "frame_second": 2.0
+  },
+  "phone": {
+    "x": 0.73,
+    "y": 0.31,
+    "width": 0.24,
+    "max_height": 0.25
+  },
+  "headline_box": {
+    "x": 0.06,
+    "y": 0.085,
+    "width": 0.88,
+    "height": 0.245
+  },
+  "hashtags": "#Piyaso #otomobil #arabatutkusu #kesfet",
+  "minimum_source_seconds": 12,
+  "text_style": "tiktok_native",
+  "text_removal": {
+    "backend": "vsr",
+    "mode": "sttn-auto",
+    "padding": 0.012,
+    "timeout_seconds": 2700,
+    "require_human_review": true
+  }
+}

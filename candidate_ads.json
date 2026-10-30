@@ -1,0 +1,305 @@
+{
+  "notes": "Piyaso jargonu üzerinden üretilmiş özgün adaylar. Onay gelene kadar ad_copy.json içine alınmaz.",
+  "items": [
+    {
+      "category": "araba",
+      "headline": "Bi tur daha dedik, Antalya turu çıktı 😭",
+      "caption": "Piyaso ekibi, son tur gerçekten son tur mu? 🚗",
+      "review_status": "pending"
+    },
+    {
+      "category": "araba",
+      "headline": "Depoda benzin az, piyaso isteği sınırsız 😭",
+      "caption": "Tur atmaya bahane arayanlara: Piyaso 😎",
+      "review_status": "pending"
+    },
+    {
+      "category": "araba",
+      "headline": "Arabayı çalıştırınca planlar değişiyor 🫣",
+      "caption": "Antalya piyasosu ve araba muhabbeti Piyaso’da.",
+      "review_status": "pending"
+    },
+    {
+      "category": "araba",
+      "headline": "Son tur diye çıktık, saat 03.00 olmuş 💀",
+      "caption": "Oturup kalkarken tur atmaya çıkanlar? Piyaso 🤝",
+      "review_status": "pending"
+    },
+    {
+      "category": "araba",
+      "headline": "Neee yine müzik açıp turluyor muyuz? 🤩",
+      "caption": "Buluşma bahanesi hazır: Piyaso 🚗",
+      "review_status": "pending"
+    },
+    {
+      "category": "araba",
+      "headline": "Konyaaltı bizi, biz Konyaaltı’nı ezberledik",
+      "caption": "Araba tutkusu + Konyaaltı piyasosu = Piyaso.",
+      "review_status": "pending"
+    },
+    {
+      "category": "araba",
+      "headline": "Sürüş bahane, piyaso şahane 😎",
+      "caption": "Antalya’da araba tayfa burada: Piyaso.",
+      "review_status": "pending"
+    },
+    {
+      "category": "araba",
+      "headline": "Araba yıkandıysa, piyaso planı vardır 🤫",
+      "caption": "Hazırlıklar tamamsa Piyaso’yu da keşfet.",
+      "review_status": "pending"
+    },
+    {
+      "category": "araba",
+      "headline": "Benzin ışığı yandı, tur hâlâ bitmedi 😭",
+      "caption": "Bir tur daha mı? Piyaso tayfası bilir.",
+      "review_status": "pending"
+    },
+    {
+      "category": "araba",
+      "headline": "Piyaso modu: açıldı. Eve dönüş: belirsiz 🫣",
+      "caption": "Araba muhabbetinin devamı Piyaso’da.",
+      "review_status": "pending"
+    },
+    {
+      "category": "araba",
+      "headline": "Yola çıkınca eve dönme fikri iptal 💀",
+      "caption": "O son tur efsanesine Piyaso da şahit.",
+      "review_status": "pending"
+    },
+    {
+      "category": "araba",
+      "headline": "Kültür’den geçecektik, sabah olmuş 🌙",
+      "caption": "Antalya’da tur atanlara Piyaso selamı.",
+      "review_status": "pending"
+    },
+    {
+      "category": "karaoke",
+      "headline": "Konser iptal, arabanın AUX’u hazır 🎤",
+      "caption": "Araba içi performanslar ve piyaso keyfi 😭 Piyaso.",
+      "review_status": "pending"
+    },
+    {
+      "category": "karaoke",
+      "headline": "Bizde ses yok ama özgüven FULL 💀",
+      "caption": "Karaoke tayfasına Piyaso’dan selam!",
+      "review_status": "pending"
+    },
+    {
+      "category": "karaoke",
+      "headline": "Sesi açınca herkes baş solist oluyor 😭",
+      "caption": "O yol şarkıları bambaşka: Piyaso.",
+      "review_status": "pending"
+    },
+    {
+      "category": "karaoke",
+      "headline": "Larada konser var dediler, araba çıktı 🎶",
+      "caption": "Lara turu + karaoke = Piyaso keyfi.",
+      "review_status": "pending"
+    },
+    {
+      "category": "karaoke",
+      "headline": "Şarkının nakaratı girince bütün ekip sanatçı",
+      "caption": "Araba içi konser klasiği. Piyaso 😎",
+      "review_status": "pending"
+    },
+    {
+      "category": "karaoke",
+      "headline": "Mikrofon yok ama dramamız tam 🎤",
+      "caption": "Bir şarkı, bir tur, bolca Piyaso.",
+      "review_status": "pending"
+    },
+    {
+      "category": "karaoke",
+      "headline": "Bu arabada playback yasak, çığlık serbest",
+      "caption": "Karaoke gecesi yaşayanlara: Piyaso.",
+      "review_status": "pending"
+    },
+    {
+      "category": "karaoke",
+      "headline": "Işıklar turunda konser bedava oluyor 🤝",
+      "caption": "Piyaso’nun müzik açıp turlayan tayfası.",
+      "review_status": "pending"
+    },
+    {
+      "category": "sarki",
+      "headline": "Bu şarkıyla bir tur atılmaz, üç tur atılır",
+      "caption": "Çalma listesi hazırsa Piyaso da hazır.",
+      "review_status": "pending"
+    },
+    {
+      "category": "sarki",
+      "headline": "Playlist exi hatırlattı, turu uzattık 🫠",
+      "caption": "Şarkı değişir, piyaso bitmez.",
+      "review_status": "pending"
+    },
+    {
+      "category": "sarki",
+      "headline": "Camlar açık, ses full, piyaso başlasın 😎",
+      "caption": "Antalya gecelerine Piyaso yakışır.",
+      "review_status": "pending"
+    },
+    {
+      "category": "sarki",
+      "headline": "Müzik açıldıysa bütün planlar ertelenir",
+      "caption": "Bir şarkı daha, bir tur daha. Piyaso.",
+      "review_status": "pending"
+    },
+    {
+      "category": "sarki",
+      "headline": "Bu şarkı Konyaaltı yolunda başka vuruyor",
+      "caption": "Konyaaltı ve yol müziği. Piyaso 🚗",
+      "review_status": "pending"
+    },
+    {
+      "category": "sarki",
+      "headline": "İlk şarkıda iyiydik, üçüncüde dağıldık 💀",
+      "caption": "Karaoke mi piyaso mu? Hepsi bir arada.",
+      "review_status": "pending"
+    },
+    {
+      "category": "genel",
+      "headline": "SON DAKİKA: Antalya’da piyaso saati 😎",
+      "caption": "Piyaso’yu keşfet, araba tayfasına katıl.",
+      "review_status": "pending"
+    },
+    {
+      "category": "genel",
+      "headline": "Piyaso nedir diyenlere canlı örnek geldik 🫣",
+      "caption": "Antalya’nın araba muhabbeti: Piyaso.",
+      "review_status": "pending"
+    },
+    {
+      "category": "genel",
+      "headline": "Hakkımızdaki piyaso iddiaları doğrudur 🤝",
+      "caption": "Üstelik muhabbet Piyaso’da da devam ediyor.",
+      "review_status": "pending"
+    },
+    {
+      "category": "genel",
+      "headline": "İşi gücü bıraktık, yine piyaso konuşuyoruz",
+      "caption": "Tam bir Antalya klasiği. Piyaso.",
+      "review_status": "pending"
+    },
+    {
+      "category": "genel",
+      "headline": "Arkadaşlar bu da bir sosyal aktivite sonuçta",
+      "caption": "Piyaso için bahane üretmeyen kaldı mı?",
+      "review_status": "pending"
+    },
+    {
+      "category": "genel",
+      "headline": "Bizi gece değil, son tur mahvetti 😭",
+      "caption": "Tur bitmez, muhabbet bitmez. Piyaso.",
+      "review_status": "pending"
+    },
+    {
+      "category": "genel",
+      "headline": "Piyaso yapmak artık plan değil refleks 😎",
+      "caption": "Araba tayfasını Piyaso’da keşfet.",
+      "review_status": "pending"
+    },
+    {
+      "category": "genel",
+      "headline": "Mesele gezmek değil, olay piyaso yapmak 🤫",
+      "caption": "Antalya otomobil topluluğu Piyaso.",
+      "review_status": "pending"
+    },
+    {
+      "category": "yerel",
+      "headline": "SON DAKİKA: Konyaaltı yine tura çıkmış 🚗",
+      "caption": "Antalya piyaso tayfasına özel: Piyaso 😎",
+      "review_status": "pending"
+    },
+    {
+      "category": "yerel",
+      "headline": "Laracılar nerde, yine ortalık sessiz? 👀",
+      "caption": "Lara tayfası, Piyaso’ya selam verin.",
+      "review_status": "pending"
+    },
+    {
+      "category": "yerel",
+      "headline": "Kültür’de bir tur dedik, gece bitti 🫣",
+      "caption": "Antalya’da piyaso muhabbeti Piyaso’da.",
+      "review_status": "pending"
+    },
+    {
+      "category": "yerel",
+      "headline": "Işıklar’dan geçmeden eve dönülmez 🤝",
+      "caption": "Işıklar turu sevenler Piyaso’yu keşfetsin.",
+      "review_status": "pending"
+    },
+    {
+      "category": "yerel",
+      "headline": "Bozkan tayfası, piyaso mesaisi başladı 😎",
+      "caption": "Bozkan’dan selamı olanlar Piyaso’da mı?",
+      "review_status": "pending"
+    },
+    {
+      "category": "yerel",
+      "headline": "Antalya bugün de bir tura ikna edildi 😭",
+      "caption": "Piyaso modu açık, siz nerdesiniz?",
+      "review_status": "pending"
+    },
+    {
+      "category": "yerel",
+      "headline": "Cadde dedik, eve çıkış gece yarısı 💀",
+      "caption": "Bu muhabbetin adı Piyaso!",
+      "review_status": "pending"
+    },
+    {
+      "category": "yerel",
+      "headline": "Konyaaltı’nda son tur diye bir şey yok",
+      "caption": "Sahilde tur atanların bahanesi Piyaso.",
+      "review_status": "pending"
+    },
+    {
+      "category": "iliski",
+      "headline": "Ex, next, bi de son tur... kafalar karışık 💀",
+      "caption": "Piyaso tayfası bu cümleyi anladı 😂",
+      "review_status": "pending"
+    },
+    {
+      "category": "iliski",
+      "headline": "Ghost yedik, playlisti açıp turladık 🤝",
+      "caption": "Dramı arabaya taşıyanlar: Piyaso.",
+      "review_status": "pending"
+    },
+    {
+      "category": "iliski",
+      "headline": "Kesişmek kolay, selam vermek cesaret ister 🫣",
+      "caption": "Antalya piyasosunda muhabbet Piyaso’da.",
+      "review_status": "pending"
+    },
+    {
+      "category": "iliski",
+      "headline": "Piyasoya bacımla çıktım, yemin ederim 😭",
+      "caption": "Savunma hazır. Tur başlasın. Piyaso.",
+      "review_status": "pending"
+    },
+    {
+      "category": "iliski",
+      "headline": "Kısmet kapıyı çalmaz, bazen tur atar 🚗",
+      "caption": "Araba tayfasına Piyaso’dan selam.",
+      "review_status": "pending"
+    },
+    {
+      "category": "iliski",
+      "headline": "Exi unutalım derken bütün şehri turladık",
+      "caption": "Tur atma bahanesi bitmiyor: Piyaso.",
+      "review_status": "pending"
+    },
+    {
+      "category": "iliski",
+      "headline": "Bir baktık kahve planı piyaso turuna dönmüş",
+      "caption": "Akşam planlarını bilenler bilir. Piyaso.",
+      "review_status": "pending"
+    },
+    {
+      "category": "iliski",
+      "headline": "Arkadaşlar ben sadece piyaso yapacaktım 😭",
+      "caption": "Sonrasını anlatmak istemiyorum. Piyaso.",
+      "review_status": "pending"
+    }
+  ]
+}
