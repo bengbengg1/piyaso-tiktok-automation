@@ -1,0 +1,617 @@
+# Piyaso automated daily private ad studio.
+# v22: Groq API diagnostic uses real chat completions, reports sanitized 403 reason.
+# Run workflow with diagnose_only=true for a fast key test without video processing.
+# Install ONLY this YAML under .github/workflows/piyaso-daily-studio.yml.
+# Reuses files that already exist in the Piyaso GitHub repo.
+# NEVER creates Buffer posts or sends video to TikTok. Rights/visual approval required.
+name: Piyaso - Gunluk 2-3 otomatik reklam videosu (ozel taslak)
+
+on:
+  workflow_dispatch:
+    inputs:
+      day:
+        description: 'YYYY-MM-DD, bos birakilirsa Turkiye bugun'
+        type: string
+        required: false
+        default: ''
+      diagnose_only:
+        description: 'Sadece Groq API baglantisini kontrol et (video islemez)'
+        type: boolean
+        required: false
+        default: true
+  schedule:
+    # Every morning 09:10 Europe/Istanbul = 06:10 UTC (TR has no DST).
+    - cron: '10 6 * * *'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: piyaso-daily-private-studio
+  cancel-in-progress: false
+
+jobs:
+  daily:
+    runs-on: ubuntu-latest
+    timeout-minutes: 180
+    env:
+      R2_ASSETS_BUCKET: piyaso-tiktok-assets
+      R2_ENDPOINT: ${{ secrets.R2_ENDPOINT }}
+      R2_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
+      R2_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
+      GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
+      GROQ_MODEL: ${{ vars.GROQ_MODEL || 'openai/gpt-oss-20b' }}
+      OVERRIDE_DATE: ${{ inputs.day || '' }}
+      PUBLISH_ENABLED: 'false'
+      PADDLE_PDX_DISABLE_MODEL_SOURCE_CHECK: 'True'
+    steps:
+      - name: Mevcut Piyaso deposunu getir
+        uses: actions/checkout@v4
+
+      - name: Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Groq API erisimini dogrudan tani - gizli anahtar loglanmaz
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import json
+          import os
+          import re
+          import sys
+          from urllib.error import HTTPError, URLError
+          from urllib.request import Request, urlopen
+
+          key = os.environ.get('GROQ_API_KEY','').strip()
+          model = os.environ.get('GROQ_MODEL','openai/gpt-oss-20b')
+          if not key:
+              raise SystemExit('GROQ_API_KEY GitHub Secret eksik veya bos. Settings > Secrets and variables > Actions.')
+          if not key.startswith('gsk_'):
+              raise SystemExit('GROQ_API_KEY bicimi beklenenden farkli (gsk_ ile baslamiyor). Gizli anahtari loglamiyoruz.')
+          payload = json.dumps({
+              'model': model,
+              'messages': [{'role':'user','content':'Tek kelimeyle yanit ver: tamam'}],
+              'max_completion_tokens': 96,
+              'stream': False
+          }).encode('utf-8')
+          req = Request('https://api.groq.com/openai/v1/chat/completions',
+                        data=payload,method='POST',headers={
+                            'Authorization': 'Bearer '+key,
+                            'Content-Type': 'application/json',
+                            'User-Agent': 'Piyaso-Daily-Studio/22'})
+          try:
+              with urlopen(req,timeout=40) as response:
+                  data = json.load(response)
+                  if not data.get('choices'):
+                      raise RuntimeError('Groq yaniti alindi ama choices bulunamadi')
+              print('GROQ API BASARILI: secili modelle dogrudan istek HTTP 200. Anahtar gizli kaldi.')
+          except HTTPError as exc:
+              body = exc.read(4096)
+              kind = 'unclassified'
+              msg = ''
+              try:
+                  err = json.loads(body).get('error', {})
+                  if isinstance(err, dict):
+                      kind = str(err.get('type') or err.get('code') or kind)[:100]
+                      msg = str(err.get('message') or '')[:360]
+              except (ValueError, UnicodeDecodeError):
+                  pass
+              def sanitize(value):
+                  value = re.sub(r'gsk_[A-Za-z0-9_-]+', '[REDACTED]', value)
+                  value = re.sub(r'Bearer\s+[^\s]+', 'Bearer [REDACTED]', value,flags=re.I)
+                  value = value.replace(key, '[REDACTED]')
+                  return value.replace('\n',' ')[:360]
+              print('GROQ API HATA: HTTP',exc.code,'/ tur:',sanitize(kind))
+              if msg:
+                  print('Groq aciklamasi:',sanitize(msg))
+              else:
+                  print('Groq JSON hata aciklamasi donmedi; Content-Type:',
+                        sanitize(exc.headers.get('Content-Type','unknown')))
+              print('Bu Groq API anahtariyla yapilan dogrudan istektir; Playground yaniti farklidir.')
+              sys.exit(2)
+          except URLError as exc:
+              print('GROQ AG HATASI:',type(exc.reason).__name__)
+              sys.exit(2)
+          PY
+
+      - name: FFmpeg ve R2 kutuphanelerini kur
+        if: ${{ github.event_name != 'workflow_dispatch' || inputs.diagnose_only != true }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq ffmpeg libegl1 libgl1 libopengl0 libglib2.0-0
+          python -m pip install -r requirements.txt
+
+      - name: R2 baglantisini ve Piyaso kaydini dogrula - YAYIN YOK
+        if: ${{ github.event_name != 'workflow_dispatch' || inputs.diagnose_only != true }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          python live_smoke.py --r2
+          python - <<'PY'
+          import storage_client
+          s3=storage_client.client()
+          r=s3.list_objects_v2(Bucket='piyaso-tiktok-assets',Prefix='app_recordings/',MaxKeys=100)
+          keys={i['Key'] for i in r.get('Contents',[])}
+          allowed=[k for k in keys if k.startswith('app_recordings/') and k.lower().endswith(('.mp4','.mov','.mkv')) and '/' not in k[len('app_recordings/'):]]
+          if not allowed:
+              raise SystemExit('Piyaso ekran kaydi eksik: R2/app_recordings/ klasorune MP4 veya MOV ekleyin')
+          print('Piyaso ekran kaydi R2 klasorunde bulundu; privacy-safe private drafting is enabled.')
+          PY
+
+      - name: Gercek VSR STTN-DET OCR + silme modelini kur
+        if: ${{ github.event_name != 'workflow_dispatch' || inputs.diagnose_only != true }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -s get_vsr.sh && test -s setup_vsr_cpu.sh
+          mkdir -p scripts vendor
+          cp get_vsr.sh scripts/get_vsr.sh
+          cp setup_vsr_cpu.sh scripts/setup_vsr_cpu.sh
+          chmod +x scripts/get_vsr.sh scripts/setup_vsr_cpu.sh
+          bash scripts/setup_vsr_cpu.sh
+          test -s vendor/video-subtitle-remover/backend/models/sttn-det/sttn.pth
+          test "$(git -C vendor/video-subtitle-remover hash-object backend/models/sttn-det/sttn.pth)" = '4b9c2458591463af28c8f5b7044a09f8689f87c1'
+
+      - name: Gunluk reklamlari olustur ve OZEL R2 klasorune kaydet
+        if: ${{ github.event_name != 'workflow_dispatch' || inputs.diagnose_only != true }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          cat > daily_studio.py <<'PY'
+          """Piyaso daily studio: private end-to-end ad drafts from R2 licensed/user-supplied media.
+
+          Integrates existing scene_select, daily_copy, render, and history_sync modules.
+          Uses authentic VSR STTN-DET for text detection/removal and original soundtrack.
+          Scheduled results are PRIVATE drafts, NEVER Buffer/TikTok submissions.
+          """
+          from __future__ import annotations
+
+          import argparse
+          import datetime as dt
+          import hashlib
+          import json
+          import os
+          import re
+          import subprocess
+          import sys
+          import tempfile
+          from dataclasses import dataclass
+          from pathlib import Path
+          from zoneinfo import ZoneInfo
+
+          from PIL import Image, ImageChops, ImageStat
+
+          import render
+          import daily_copy
+          import history_sync
+          import storage_client
+          from scene_select import choose_start
+
+          ROOT = Path(__file__).resolve().parent
+          BUCKET = 'piyaso-tiktok-assets'
+          VIDEO_EXTS = ('.mp4', '.mov', '.mkv')
+          MAX_RAW = 80 * 1024 * 1024
+          MIN_DURATION = 12
+          CANVAS = (360, 640)
+          FPS = 12
+
+
+          @dataclass(frozen=True)
+          class Source:
+              key: str
+              size: int
+              etag: str
+              @property
+              def name(self):
+                  return self.key[len('backgrounds/'):]
+              @property
+              def identity(self):
+                  return hashlib.sha256(json.dumps([self.key, self.size, self.etag], ensure_ascii=False).encode()).hexdigest()[:28]
+
+
+          def valid_source(item):
+              key = item.get('Key', '')
+              if not isinstance(key, str) or not key.startswith('backgrounds/'):
+                  return None
+              name = key[len('backgrounds/'):]
+              if (not name or name in ('.', '..') or '..' in name or len(name) > 175
+                      or '/' in name or '\\' in name or any(ord(c)<32 for c in name)
+                      or Path(name).suffix.lower() not in VIDEO_EXTS):
+                  return None
+              size = int(item.get('Size', 0))
+              if size <= 0 or size > MAX_RAW:
+                  return None
+              return Source(key, size, str(item.get('ETag','')).strip('"'))
+
+
+          def list_keys(s3, prefix):
+              for page in s3.get_paginator('list_objects_v2').paginate(Bucket=BUCKET, Prefix=prefix):
+                  yield from page.get('Contents', [])
+
+
+          def list_sources(s3):
+              return sorted(filter(None, (valid_source(i) for i in list_keys(s3, 'backgrounds/'))), key=lambda x: x.key)
+
+
+          def exists(s3, key):
+              from botocore.exceptions import ClientError
+              try:
+                  s3.head_object(Bucket=BUCKET, Key=key)
+                  return True
+              except ClientError as exc:
+                  if str(exc.response.get('Error',{}).get('Code')) in ('NoSuchKey','NotFound','404'):
+                      return False
+                  raise
+
+
+          def get_bytes(s3, key, max_size=MAX_RAW):
+              o = s3.get_object(Bucket=BUCKET, Key=key)
+              if o.get('ContentLength',0) > max_size:
+                  o['Body'].close()
+                  raise ValueError(f'R2 file exceeds limit: {key}')
+              with o['Body'] as body:
+                  content = body.read(max_size + 1)
+              if len(content) > max_size:
+                  raise ValueError(f'R2 file exceeds limit: {key}')
+              return content
+
+
+          def maybe_json(s3, key):
+              if not exists(s3, key):
+                  return None
+              return json.loads(get_bytes(s3, key, max_size=128*1024))
+
+
+          def put_once(s3, key, content, mime):
+              from botocore.exceptions import ClientError
+              if not (key.startswith(('state/daily/','cache/piyaso_vsr/v2/','drafts/piyaso/'))
+                      and '..' not in key and '\\' not in key):
+                  raise ValueError('R2 path is not in a permitted PRIVATE production prefix')
+              if not content:
+                  raise ValueError('Refuse to upload empty bytes')
+              try:
+                  s3.put_object(Bucket=BUCKET, Key=key, Body=content, ContentType=mime, IfNoneMatch='*')
+              except ClientError as exc:
+                  if str(exc.response.get('Error',{}).get('Code')) not in ('412','PreconditionFailed'):
+                      raise
+                  # Immutable object; do not overwrite it after a retry.
+                  existing = get_bytes(s3, key, max_size=max(MAX_RAW, len(content)))
+                  if hashlib.sha256(existing).digest() != hashlib.sha256(content).digest():
+                      raise RuntimeError('Existing immutable R2 artifact differs: ' + key)
+
+
+          def json_bytes(data):
+              return (json.dumps(data, ensure_ascii=False, sort_keys=True, indent=2)+'\n').encode('utf8')
+
+
+          def probe(path):
+              out = subprocess.run(['ffprobe','-v','error','-show_entries','format=duration:stream=codec_type,width,height',
+                                    '-of','json',str(path)], capture_output=True, text=True, check=True, timeout=60)
+              doc = json.loads(out.stdout)
+              video = next((x for x in doc['streams'] if x['codec_type']=='video'), None)
+              duration = float(doc.get('format',{}).get('duration',0))
+              if video is None or duration <= 0:
+                  raise RuntimeError('Video cannot be decoded: '+str(path))
+              return {'duration': duration, 'width': int(video['width']), 'height': int(video['height']),
+                      'audio': any(x['codec_type']=='audio' for x in doc['streams'])}
+
+
+          def run(args, timeout=900):
+              subprocess.run(args, check=True, timeout=timeout, stdout=subprocess.DEVNULL)
+
+
+          def previous_uses(s3):
+              """Track completed daily drafts, independent of local ephemeral runner."""
+              usage = {}
+              for obj in list_keys(s3, 'drafts/piyaso/'):
+                  key = obj['Key']
+                  if not re.fullmatch(r'drafts/piyaso/\d{4}-\d{2}-\d{2}/\d{2}/metadata\.json', key):
+                      continue
+                  data = maybe_json(s3, key)
+                  if not data or data.get('status') != 'draft_ready':
+                      continue
+                  day = data.get('date','')
+                  identity = data.get('source_identity')
+                  if identity:
+                      usage.setdefault(identity, []).append(day)
+              return usage
+
+
+          def prioritise(pool, usage, day):
+              """Never-used clips first, then least-recently used; stable random tie-breaker."""
+              return sorted(pool, key=lambda x: (
+                  bool(usage.get(x.identity)),
+                  max(usage.get(x.identity, ['0000-00-00'])),
+                  len(usage.get(x.identity, [])),
+                  hashlib.sha256((day+'|'+x.key).encode()).hexdigest()))
+
+
+          def download_source(s3, source, directory):
+              path = directory / ('source-'+source.identity+Path(source.name).suffix.lower())
+              data = get_bytes(s3, source.key)
+              if len(data) != source.size:
+                  raise RuntimeError('R2 source changed during selection: '+source.name)
+              path.write_bytes(data)
+              return path
+
+
+          def cache_key(source, start, duration):
+              raw = f'{source.identity}|{start:.2f}|{duration:.2f}|{CANVAS[0]}x{CANVAS[1]}|{FPS}|sttn-det|v2'
+              return 'cache/piyaso_vsr/v2/' + hashlib.sha256(raw.encode()).hexdigest()[:32] + '/'
+
+
+          def percent_changed(before, after, seconds):
+              """Mechanical changed-pixel check; does not certify that text removal looks natural."""
+              def snap(path, output):
+                  run(['ffmpeg','-nostdin','-hide_banner','-loglevel','error','-y','-ss',str(min(1.,seconds*.4)),
+                       '-i',str(path),'-frames:v','1',str(output)], timeout=60)
+              p1=before.with_name('input_sample.png'); p2=after.with_name('output_sample.png')
+              snap(before,p1);snap(after,p2)
+              with Image.open(p1) as a, Image.open(p2) as b:
+                  if a.size!=b.size:
+                      raise RuntimeError('Cleaned frame dimensions differ from source')
+                  change=ImageStat.Stat(ImageChops.difference(a.convert('RGB'),b.convert('RGB')).convert('L')).mean[0]
+              # Lossy compression can change every pixel; small differences alone don't prove removed text.
+              if change < .25:
+                  raise RuntimeError('AI output appears unchanged. Rejecting for private review.')
+              return round(change,3)
+
+
+          def prepare_cleaned(s3, source, root, *, duration_limit=18):
+              raw = download_source(s3, source, root)
+              meta = probe(raw)
+              if meta['duration'] < MIN_DURATION:
+                  raise ValueError(f'Source is too short for an ad ({meta["duration"]:.1f}s): {source.name}')
+              duration=min(duration_limit, meta['duration'])
+              start=choose_start(raw, duration)
+              if start+duration > meta['duration']+.05:
+                  raise RuntimeError('Scene selection outside source')
+              key=cache_key(source,start,duration)
+              ready=maybe_json(s3,key+'receipt.json')
+              clip=root / ('cleaned-'+source.identity+'.mp4')
+              if ready is not None:
+                  if ready.get('source_identity')!=source.identity or ready.get('seconds')!=round(duration,2):
+                      raise RuntimeError('Cached VSR receipt does not match selected source')
+                  clip.write_bytes(get_bytes(s3,key+'cleaned.mp4'))
+                  if probe(clip)['duration'] < duration-.6:
+                      raise RuntimeError('Cached video shorter than expected')
+                  return clip, ready
+              home=os.getenv('VSR_HOME','')
+              py=os.getenv('VSR_PYTHON','')
+              if not home or not py or not Path(py).is_file():
+                  raise RuntimeError('VSR model environment not configured; do not fake removed captions')
+              backend=Path(home)/'backend/main.py'
+              weights=Path(home)/'backend/models/sttn-det/sttn.pth'
+              if not backend.is_file() or not weights.is_file() or weights.stat().st_size < 60_000_000:
+                  raise RuntimeError('Authentic VSR STTN-DET model is missing')
+              normal=root/('normal-'+source.identity+'.mp4')
+              noaudio=root/('vsr-'+source.identity+'.mp4')
+              run(['ffmpeg','-nostdin','-hide_banner','-loglevel','error','-y',
+                   '-ss',str(start),'-i',str(raw),'-t',str(duration),
+                   '-vf',f'scale={CANVAS[0]}:{CANVAS[1]}:force_original_aspect_ratio=increase,crop={CANVAS[0]}:{CANVAS[1]},fps={FPS},setsar=1',
+                   '-an','-c:v','libx264','-preset','ultrafast','-crf','19','-pix_fmt','yuv420p',str(normal)],timeout=300)
+              # No hand-drawn coordinates. The upstream PaddleOCR detector handles changing text.
+              run([py,str(backend),'-i',str(normal),'-o',str(noaudio),'--inpaint-mode','sttn-det'],timeout=4800)
+              model_out=probe(noaudio)
+              if model_out['duration']<duration-.6 or (model_out['width'],model_out['height'])!=CANVAS:
+                  raise RuntimeError('VSR produced a truncated or incorrectly sized clip')
+              measured=percent_changed(normal,noaudio,duration)
+              # Original music/voice is taken from the SOURCE with the exact selected time offset.
+              run(['ffmpeg','-nostdin','-hide_banner','-loglevel','error','-y',
+                   '-i',str(noaudio),'-ss',str(start),'-t',str(duration),'-i',str(raw),
+                   '-map','0:v:0','-map','1:a?','-c:v','copy','-c:a','aac','-b:a','128k',
+                   '-t',str(duration),'-shortest','-movflags','+faststart',str(clip)],timeout=300)
+              output=probe(clip)
+              if output['duration']<duration-.6 or (meta['audio'] and not output['audio']):
+                  raise RuntimeError('Cleaned output lost required frames or source audio')
+              report={'source_key':source.key,'source_identity':source.identity,'start_seconds':round(start,2),
+                      'seconds':round(duration,2),'model':'VSR STTN-DET','mean_luma_change':measured,
+                      'result':'AI ran; manual visual quality not certified','copyright_review_required':True}
+              put_once(s3,key+'cleaned.mp4',clip.read_bytes(),'video/mp4')
+              put_once(s3,key+'receipt.json',json_bytes(report),'application/json')
+              return clip,report
+
+
+          def download_app_recordings(s3):
+              """Use R2 ONLY. Bundled synthetic app recording must never be used for private drafts."""
+              names = ['app_recording.mp4','app_recording.mov','app_recording.mp4.mov']
+              available = {i['Key'][len('app_recordings/'):]:i for i in list_keys(s3,'app_recordings/')
+                           if i['Key'].startswith('app_recordings/') and '/' not in i['Key'][len('app_recordings/'): ]}
+              primary=next((n for n in names if n in available),None)
+              if primary is None:
+                  # Accept arbitrary video names in the dedicated recordings folder too.
+                  choices=[n for n in sorted(available) if valid_source({'Key':'backgrounds/'+n,'Size':available[n].get('Size',0)})]
+                  primary=choices[0] if choices else None
+              if primary is None:
+                  raise RuntimeError('No valid Piyaso screen recording in R2/app_recordings/ (MP4/MOV)')
+              base=ROOT/'assets'
+              (base/'app_recordings').mkdir(parents=True,exist_ok=True)
+              for stale in list((base/'app_recordings').glob('*'))+list(base.glob('app_recording.*')):
+                  if stale.is_file() and stale.suffix.lower() in VIDEO_EXTS:
+                      stale.unlink()
+              local_default=primary if primary in names else 'app_recording.mp4'
+              base.joinpath(local_default).write_bytes(get_bytes(s3,'app_recordings/'+primary))
+              if not probe(base/local_default)['duration'] >= 1:
+                  raise ValueError('Piyaso screen recording is invalid')
+              count=1
+              for name in sorted(available):
+                  if name in names or name==primary or not valid_source({'Key':'backgrounds/'+name,'Size':available[name].get('Size',0)}):
+                      continue
+                  base.joinpath('app_recordings',name).write_bytes(get_bytes(s3,'app_recordings/'+name))
+                  count+=1
+              return count
+
+
+          def ensure_assets(selected):
+              base=ROOT/'assets'
+              folder=base/'backgrounds'
+              folder.mkdir(parents=True,exist_ok=True)
+              for file in folder.iterdir():
+                  if file.is_file() and file.suffix.lower() in VIDEO_EXTS:
+                      file.unlink()
+              for source,clip,_ in selected:
+                  (folder/source.name).write_bytes(clip.read_bytes())
+              (base/'catalog.json').write_bytes(json_bytes(json.loads((ROOT/'catalog.json').read_text('utf8'))))
+              settings=json.loads((ROOT/'clip_settings.json').read_text('utf8'))
+              # Selected footage is already VSR-cleaned. No second OCR pass / no duplicate inpaint.
+              for source,_,_ in selected:
+                  settings.setdefault('videos',{})[source.name] = {'text_mode':'manual','cover_rectangles':[],
+                                                                  'start_seconds':0, 'duration_seconds':18}
+              (ROOT/'clip_settings.json').write_bytes(json_bytes(settings))
+
+
+          def prepare_daily_copy(s3, day):
+              saved_key=f'state/daily/{day}/copy.json'
+              remote=maybe_json(s3,saved_key)
+              if remote is not None:
+                  folder=ROOT/'output'/day
+                  folder.mkdir(parents=True,exist_ok=True)
+                  dest=folder/'daily_copy.json'
+                  dest.write_bytes(json_bytes(remote))
+                  return dest
+              history_sync.pull()
+              generated=daily_copy.generate_for_day(dt.date.fromisoformat(day))
+              put_once(s3,saved_key,json_bytes(generated),'application/json')
+              return ROOT/'output'/day/'daily_copy.json'
+
+
+          def create_day(s3, day, *, only_source_keys=None):
+              if storage_client.bucket_name('assets') != BUCKET:
+                  raise RuntimeError('Only dedicated Piyaso R2 bucket is allowed')
+              day_obj=dt.date.fromisoformat(day)
+              if day_obj > dt.datetime.now(ZoneInfo('Europe/Istanbul')).date()+dt.timedelta(days=3):
+                  raise ValueError('Cannot stage future draft days more than 3 days ahead')
+              config=json.loads((ROOT/'config.json').read_text('utf8'))
+              count,times=render.day_count(day_obj,config)
+              already=maybe_json(s3,f'state/daily/{day}/result.json')
+              if already is not None:
+                  drafts=already.get('private_drafts',[])
+                  if (already.get('produced')==count and len(drafts)==count and
+                          all(exists(s3,item['r2_prefix']+'video.mp4') and
+                              exists(s3,item['r2_prefix']+'metadata.json') for item in drafts)):
+                      print(f'Day {day} already complete: {count} private ads; no re-render required.',flush=True)
+                      return already
+                  raise RuntimeError('Partial day result receipt; refusing duplicate or inconsistent drafts')
+              pool=list_sources(s3)
+              if only_source_keys:
+                  pool=[source for source in pool if source.key in only_source_keys]
+              if len(pool)<count:
+                  raise RuntimeError(f'{count} videos required for this weekday; only {len(pool)} in R2')
+              # Fail before expensive inference when Piyaso app recording is missing.
+              app_count=download_app_recordings(s3)
+              stored_sel=maybe_json(s3,f'state/daily/{day}/selection.json')
+              if stored_sel:
+                  keys=stored_sel.get('source_keys',[])
+                  if len(keys)!=count or len(set(keys))!=count:
+                      raise RuntimeError('Stored daily selection is invalid')
+                  by_key={s.key:s for s in pool}
+                  if any(k not in by_key for k in keys):
+                      raise RuntimeError('Previously selected source missing or changed')
+                  candidates=[by_key[k] for k in keys]
+                  if stored_sel.get('source_identities') != [s.identity for s in candidates]:
+                      raise RuntimeError('Source file was replaced after daily selection; manual reconciliation required')
+              else:
+                  candidates=prioritise(pool, previous_uses(s3), day)
+              selected=[]
+              reasons=[]
+              with tempfile.TemporaryDirectory(prefix='piyaso-daily-') as tmp:
+                  root=Path(tmp)
+                  for source in candidates[:count+3]:
+                      try:
+                          cleaned,report=prepare_cleaned(s3,source,root)
+                          selected.append((source,cleaned,report))
+                          print('Prepared:',source.key,'/',report['seconds'],'seconds',flush=True)
+                          if len(selected)==count:
+                              break
+                      except Exception as err:
+                          if stored_sel:
+                              raise
+                          reasons.append(f'{source.name}: {type(err).__name__} {str(err)[:130]}')
+                          print('SKIPPED: ',reasons[-1],flush=True)
+                  if len(selected)!=count:
+                      raise RuntimeError(f'Only {len(selected)}/{count} sources usable: '+ '; '.join(reasons[-5:]))
+                  keys=[a.key for a,_,_ in selected]
+                  put_once(s3,f'state/daily/{day}/selection.json',json_bytes({
+                      'date':day,'source_keys':keys,'source_identities':[a.identity for a,_,_ in selected],
+                      'screen_recordings':app_count,'slots':count,'type':'private_drafts_only',
+                  }),'application/json')
+                  ensure_assets(selected)
+                  (ROOT/'assets'/'selection.json').write_bytes(json_bytes({
+                      'date':day,'selected_names':[a.name for a,_,_ in selected],
+                      'remote_approved_pool_size':len(pool),
+                  }))
+                  daily_path=prepare_daily_copy(s3,day)
+                  # Existing FFmpeg/Pillow renderer includes real app PiP and TikTok native overlays.
+                  manifest=render.render_day(day_obj,width=720,height=1280,daily_copy_path=daily_path)
+                  if len(manifest['items'])!=count:
+                      raise RuntimeError('Renderer did not produce every daily video')
+                  published=[]
+                  for item,(source,cleaned,report) in zip(manifest['items'],selected):
+                      if item['background']!=source.name:
+                          raise RuntimeError('Wrong source mapping between Groq and render slot')
+                      filepath=ROOT/item['file']
+                      output=probe(filepath)
+                      if (output['width'],output['height'])!=(720,1280) or output['duration']<MIN_DURATION-.2:
+                          raise RuntimeError('Final ad video is truncated or not vertical HD')
+                      slot=item['slot'].split('_',1)[0]
+                      prefix=f'drafts/piyaso/{day}/{slot}/'
+                      rights=(ROOT/'assets/catalog.json').read_text('utf8')
+                      commercial=json.loads(rights).get('backgrounds',{}).get(source.name,{}).get('commercial_use_authorized') is True
+                      receipt={'date':day,'status':'draft_ready','slot':slot,'source_key':source.key,
+                               'source_identity':source.identity,'source_seconds':report['seconds'],
+                               'ai_video_cleaned':True,'real_piyaso_screen_recording':True,
+                               'groq_copy':manifest['copy_source']=='ai_generated',
+                               'caption':item['caption'],'commercial_rights_confirmed':commercial,
+                               'human_quality_review_required':True, 'publish_allowed':False,
+                               'buffer_posted':False,'tiktok_posted':False,'width':output['width'],
+                               'height':output['height'],'duration':round(output['duration'],2)}
+                      put_once(s3,prefix+'video.mp4',filepath.read_bytes(),'video/mp4')
+                      put_once(s3,prefix+'caption.txt',item['caption'].encode('utf8'),'text/plain; charset=utf-8')
+                      put_once(s3,prefix+'metadata.json',json_bytes(receipt),'application/json')
+                      published.append({'slot':slot,'source':source.name,'r2_prefix':prefix})
+                      print('PRIVATE DRAFT:',prefix+'video.mp4',flush=True)
+                  # Preserve Groq history across daily ephemeral GitHub Action runners.
+                  history_sync.push(day)
+                  summary={'date':day,'produced':count,'private_drafts':published,'tiktok_posted':False,
+                           'pipeline':'R2 -> scene selection -> VSR OCR -> Groq -> FFmpeg + Piyaso PiP -> private R2'}
+                  put_once(s3,f'state/daily/{day}/result.json',json_bytes(summary),'application/json')
+                  return summary
+
+
+          def main():
+              parser=argparse.ArgumentParser(description='Create 2 or 3 complete PRIVATE Piyaso TikTok ad videos daily')
+              parser.add_argument('--date',default=dt.datetime.now(ZoneInfo('Europe/Istanbul')).date().isoformat())
+              args=parser.parse_args()
+              if not os.getenv('GROQ_API_KEY'):
+                  parser.error('GROQ_API_KEY missing: real Groq copy is mandatory')
+              s3=storage_client.client()
+              result=create_day(s3,args.date)
+              print('DAILY DRAFTS COMPLETE: '+json.dumps(result,ensure_ascii=False),flush=True)
+              if os.environ.get('GITHUB_STEP_SUMMARY'):
+                  with open(os.environ['GITHUB_STEP_SUMMARY'],'a',encoding='utf8') as out:
+                      out.write(f'### Piyaso günlük özel reklam taslakları — {args.date}\n')
+                      out.write(f'**Oluşturulan:** {result["produced"]} adet; **TikTok / Buffer:** KAPALI.\n')
+                      for item in result['private_drafts']:
+                          out.write(f'- `{item["r2_prefix"]}video.mp4` ({item["source"]})\n')
+
+
+          if __name__=='__main__':
+              main()
+          PY
+          python -m py_compile daily_studio.py
+          if [[ -z "$OVERRIDE_DATE" ]]; then
+            OVERRIDE_DATE="$(TZ=Europe/Istanbul date +%F)"
+          fi
+          python daily_studio.py --date "$OVERRIDE_DATE"
+
+      - name: Yayin kapali oldugunu dogrula
+        if: always()
+        shell: bash
+        run: |
+          test "$PUBLISH_ENABLED" = 'false'
+          echo 'Private video drafts only — no Buffer/TikTok publication.'
