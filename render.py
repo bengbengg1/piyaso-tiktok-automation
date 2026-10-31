@@ -264,9 +264,11 @@ def render_day(day, width=None, height=None, daily_copy_path=None):
     base=ROOT/config["background_dir"]
     clips=[p for p in base.iterdir() if p.is_file() and p.suffix.lower() in (".mp4",".mov",".mkv")]
     jobs=pick_jobs(day,clips,config,settings,copy)
+    copy_kind = None
     if daily_copy_path is not None:
         generated=json.loads(Path(daily_copy_path).read_text(encoding="utf-8"))
-        if generated.get("date")!=day.isoformat() or generated.get("generation_type")!="ai_generated":
+        copy_kind = generated.get("generation_type")
+        if generated.get("date")!=day.isoformat() or copy_kind not in ("ai_generated", "manual_library"):
             raise ValueError("Günlük reklam dosyası tarihi veya türü yanlış")
         supplied=generated.get("items",[])
         if len(supplied)!=len(jobs) or {x.get("slot") for x in supplied}!={j["index"] for j in jobs}:
@@ -284,7 +286,7 @@ def render_day(day, width=None, height=None, daily_copy_path=None):
     catalog_file=ROOT/"assets"/"catalog.json"
     catalog=load_json("assets/catalog.json") if catalog_file.exists() else {"backgrounds":{}}
     rights=catalog.get("backgrounds",{})
-    manifest={"date":day.isoformat(),"timezone":"Europe/Istanbul","copy_source":"ai_generated" if daily_copy_path else "approved_library","count":len(jobs),"items":[]}
+    manifest={"date":day.isoformat(),"timezone":"Europe/Istanbul","copy_source":copy_kind if daily_copy_path else "approved_library","count":len(jobs),"items":[]}
     for job in jobs:
         clip,ad=job["clip"],job["ad"]
         cfg=settings.get("videos",{}).get(clip.name,{})

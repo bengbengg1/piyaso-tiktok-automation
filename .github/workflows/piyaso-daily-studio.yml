@@ -1,5 +1,5 @@
 # Piyaso automated daily private ad studio.
-# v24: GET /models HTTP 403 yalanci engelini kaldir; gerçek Groq yazimi VSR oncesi doğrula.
+# v26: TikTok ONLY uses single-use manual copy from private R2; Groq preserved elsewhere.
 # Install ONLY this YAML under .github/workflows/piyaso-daily-studio.yml.
 # Reuses files that already exist in the Piyaso GitHub repo.
 # NEVER creates Buffer posts or sends video to TikTok. Rights/visual approval required.
@@ -14,7 +14,7 @@ on:
         required: false
         default: ''
       diagnose_only:
-        description: 'Sadece hizli Groq erisim kontrolu (video isleme yok)'
+        description: 'Yalnizca manuel reklam kutuphanesi durumunu goster (video isleme yok)'
         type: boolean
         required: false
         default: false
@@ -38,8 +38,6 @@ jobs:
       R2_ENDPOINT: ${{ secrets.R2_ENDPOINT }}
       R2_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
       R2_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
-      GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
-      GROQ_MODEL: ${{ vars.GROQ_MODEL || 'openai/gpt-oss-20b' }}
       OVERRIDE_DATE: ${{ inputs.day || '' }}
       PUBLISH_ENABLED: 'false'
       PADDLE_PDX_DISABLE_MODEL_SOURCE_CHECK: 'True'
@@ -52,31 +50,13 @@ jobs:
         with:
           python-version: '3.12'
 
-      - name: Groq hizli erisim dogrulamasi (istege bagli, video islenmez)
+      - name: Manuel Piyaso reklam kutuphanesi durumunu goster
         if: ${{ github.event_name == 'workflow_dispatch' && inputs.diagnose_only == true }}
         shell: bash
         run: |
           set -euo pipefail
-          python - <<'PY'
-          import json,os,sys
-          from urllib.error import HTTPError
-          from urllib.request import Request,urlopen
-          token=os.environ.get('GROQ_API_KEY','').strip()
-          if not token: raise SystemExit('GROQ_API_KEY eksik.')
-          request=Request('https://api.groq.com/openai/v1/chat/completions',method='POST',
-                          headers={'Authorization':'Bearer '+token,'Content-Type':'application/json'},
-                          data=json.dumps({'model':os.environ.get('GROQ_MODEL','openai/gpt-oss-20b'),
-                                           'messages':[{'role':'user','content':'Sadece tamam yaz.'}],
-                                           'max_completion_tokens':100,'stream':False}).encode())
-          try:
-              with urlopen(request,timeout=30) as response:
-                  result=json.load(response)
-              if not result.get('choices'): raise RuntimeError('Bos Groq yaniti')
-              print('Groq cevap verdi. Bu islem reklam uretimi degildir.')
-          except HTTPError as exc:
-              print('Groq HTTP',exc.code,'(hizli istek). Uretim etkinlestirilmiyor.')
-              sys.exit(2)
-          PY
+          python -m pip install 'boto3==1.43.18'
+          python manual_copy.py status
 
       - name: FFmpeg ve R2 kutuphanelerini kur
         if: ${{ github.event_name != 'workflow_dispatch' || inputs.diagnose_only != true }}
@@ -87,13 +67,12 @@ jobs:
           sudo apt-get install -y -qq ffmpeg libegl1 libgl1 libopengl0 libglib2.0-0
           python -m pip install -r requirements.txt
 
-      - name: R2 baglantisini dogrula - Groq gerçek reklam adiminda kontrol edilir - YAYIN YOK
+      - name: R2 baglantisini ve Piyaso kaydini dogrula - YAYIN YOK
         if: ${{ github.event_name != 'workflow_dispatch' || inputs.diagnose_only != true }}
         shell: bash
         run: |
           set -euo pipefail
-          # live_smoke.py --groq GET /models kullanir. Bu endpoint bazen 403 döndürürken
-          # chat/completions HTTP 200 olabilir. Gerçek Groq reklam istegi VSR oncesi asagida dogrulanir.
+          # Sadece R2/medya erisimi; TikTok metinleri yalnizca manuel kütüphaneden gelir.
           python live_smoke.py --r2
           python - <<'PY'
           import storage_client
@@ -106,24 +85,7 @@ jobs:
           print('Piyaso ekran kaydi R2 klasorunde bulundu; privacy-safe private drafting is enabled.')
           PY
 
-      - name: Groq gercek istek HTTP istemcisini duzelt (yalniz runner)
-        if: ${{ github.event_name != 'workflow_dispatch' || inputs.diagnose_only != true }}
-        shell: bash
-        run: |
-          set -euo pipefail
-          python - <<'PY'
-          from pathlib import Path
-          p=Path('daily_copy.py')
-          s=p.read_text('utf8')
-          old="headers={'Authorization': f'Bearer {token}', 'Content-Type': 'application/json'})"
-          new="headers={'Authorization': f'Bearer {token}', 'Content-Type': 'application/json', 'User-Agent': 'Piyaso-Daily-Studio/23', 'Accept': 'application/json'})"
-          if s.count(old)!=1:
-              raise SystemExit('daily_copy.py Groq istegi degismis; eski kodu zorla degistirmiyoruz.')
-          p.write_text(s.replace(old,new,1),encoding='utf8')
-          print('Gercek Groq reklam istegi, calisan API on-kontroluyle uyumlu User-Agent kullaniyor.')
-          PY
-
-      - name: GERCEK Groq reklamlarini once olustur - VSR maliyetinden once
+      - name: Yayinlanmamis manuel cumleleri videolara rezerve et - VSR maliyetinden once
         if: ${{ github.event_name != 'workflow_dispatch' || inputs.diagnose_only != true }}
         shell: bash
         run: |
@@ -143,8 +105,7 @@ jobs:
           from urllib.error import HTTPError
           from zoneinfo import ZoneInfo
           from botocore.exceptions import ClientError
-          import daily_copy
-          import history_sync
+          import manual_copy
           import render
           import storage_client
 
@@ -221,14 +182,16 @@ jobs:
                           print('Kullanilamayan video atlandi:',p['name'],type(exc).__name__)
                       if len(selected)==count: break
               if len(selected)!=count: raise SystemExit('Yeterli sureye sahip '+str(count)+' video bulunamadi.')
-          # Once kayitli ayni gun metinlerini kullan, yeni Groq istegi yapma.
+          # Ayni gunu tekrar calistirirken KESINLIKLE yeni cumle ayirma.
           existing=fetch(base+'copy.json')
           if existing is not None:
+              if existing.get('generation_type') != 'manual_library':
+                  raise SystemExit('Bu tarih icin eski Groq metni mevcut. Kaydi degistirmeden durduruldu.')
               items=existing.get('items',[])
               if (existing.get('date')!=day or len(items)!=count or
                   [x.get('source_clip') for x in sorted(items,key=lambda x:x['slot'])]!=[p['name'] for p in selected]):
                   raise SystemExit('R2 gunluk Groq metinleri secilen videolarla uyusmuyor.')
-              print('Mevcut gunluk Groq metinleri kullaniliyor; tekrar API cagrisi yok.')
+              print('Mevcut gunluk manuel reklam metinleri yeniden kullaniliyor.')
           else:
               # planned_jobs sadece dizindeki video ADLARINI kullanir; burada VSR calismaz.
               source_dir=Path(render.ROOT)/render.load_json('config.json')['background_dir']
@@ -240,22 +203,7 @@ jobs:
               (assets/'selection.json').write_text(json.dumps({
                   'date':day,'selected_names':[p['name'] for p in selected],
                   'remote_approved_pool_size':len(pool)},ensure_ascii=False),encoding='utf8')
-              history_sync.pull()
-              try:
-                  doc=daily_copy.generate_for_day(d)
-              except HTTPError as exc:
-                  body=exc.read(4096)
-                  desc='Sunucu aciklamasi yok'
-                  try:
-                      problem=json.loads(body).get('error',{})
-                      if isinstance(problem,dict):
-                          desc=str(problem.get('message') or problem.get('type') or desc)[:280]
-                  except (ValueError,UnicodeDecodeError): pass
-                  secret=os.getenv('GROQ_API_KEY','')
-                  desc=desc.replace(secret,'[GIZLI]') if secret else desc
-                  desc=re.sub(r'gsk_[A-Za-z0-9_-]+','[GIZLI]',desc).replace('\n',' ')
-                  raise SystemExit(f'GERCEK GROQ REKLAM ISTEGI REDDEDILDI: HTTP {exc.code}: {desc}. '
-                      'VSR video islemi BASLATILMADI; mevcut temiz video onbellegi korunuyor.') from None
+              doc=manual_copy.reserve_for_day(s3, day, selected)
               if [x['source_clip'] for x in sorted(doc['items'],key=lambda x:x['slot'])]!=[p['name'] for p in selected]:
                   raise SystemExit('Groq metinleri kaynak secimiyle uyusmuyor')
               # Once secimi kaydet, sonra onaylanmis Groq metinlerini.
@@ -277,10 +225,10 @@ jobs:
                       'source_identities':[p['identity'] for p in selected],
                       'screen_recordings':app_count,'slots':count,'type':'private_drafts_only'})
               save_once(base+'copy.json',doc)
-              print(f'GERCEK GROQ BASARILI: {count} reklam metni uretildi, ozel R2 kaydi olusturuldu.')
-          # Retriede sadece metin kaydi varsa secim de olmali.
+              print(f'MANUEL KUTUPHANE: {count} cumle tekil rezerve edildi, ozel R2 kaydi olusturuldu.')
+          # Tekrarda yalnizca metin kaydi varsa secim de olmali.
           if existing is not None and selected_receipt is None:
-              raise SystemExit('Groq metni var ama gunluk kaynak secimi yok; elle uzlastirma gerekli.')
+              raise SystemExit('Manuel metin var ama gunluk kaynak secimi yok; elle uzlastirma gerekli.')
           PY
 
       - name: Gercek VSR STTN-DET OCR + silme modelini kur
@@ -327,8 +275,7 @@ jobs:
           from PIL import Image, ImageChops, ImageStat
 
           import render
-          import daily_copy
-          import history_sync
+          import manual_copy
           import storage_client
           from scene_select import choose_start
 
@@ -614,10 +561,7 @@ jobs:
                   dest=folder/'daily_copy.json'
                   dest.write_bytes(json_bytes(remote))
                   return dest
-              history_sync.pull()
-              generated=daily_copy.generate_for_day(dt.date.fromisoformat(day))
-              put_once(s3,saved_key,json_bytes(generated),'application/json')
-              return ROOT/'output'/day/'daily_copy.json'
+              raise RuntimeError('Manuel cumle rezervasyonu bulunamadi; VSR/render durduruldu. '                                 'Once manuel kutuphaneyi doldurup preflight calistirin.')
 
 
           def create_day(s3, day, *, only_source_keys=None):
@@ -693,7 +637,7 @@ jobs:
                   published=[]
                   for item,(source,cleaned,report) in zip(manifest['items'],selected):
                       if item['background']!=source.name:
-                          raise RuntimeError('Wrong source mapping between Groq and render slot')
+                          raise RuntimeError('Wrong source mapping between manual copy and render slot')
                       filepath=ROOT/item['file']
                       output=probe(filepath)
                       if (output['width'],output['height'])!=(720,1280) or output['duration']<MIN_DURATION-.2:
@@ -705,7 +649,7 @@ jobs:
                       receipt={'date':day,'status':'draft_ready','slot':slot,'source_key':source.key,
                                'source_identity':source.identity,'source_seconds':report['seconds'],
                                'ai_video_cleaned':True,'real_piyaso_screen_recording':True,
-                               'groq_copy':manifest['copy_source']=='ai_generated',
+                               'manual_copy':manifest['copy_source']=='manual_library',
                                'caption':item['caption'],'commercial_rights_confirmed':commercial,
                                'human_quality_review_required':True, 'publish_allowed':False,
                                'buffer_posted':False,'tiktok_posted':False,'width':output['width'],
@@ -715,10 +659,11 @@ jobs:
                       put_once(s3,prefix+'metadata.json',json_bytes(receipt),'application/json')
                       published.append({'slot':slot,'source':source.name,'r2_prefix':prefix})
                       print('PRIVATE DRAFT:',prefix+'video.mp4',flush=True)
-                  # Preserve Groq history across daily ephemeral GitHub Action runners.
-                  history_sync.push(day)
+                  # Only completed private MP4 drafts consume the lines.
+                  # Claims survive retries and the used archive blocks all future reuse.
+                  manual_copy.finalize_day(s3, day, json.loads(daily_path.read_text('utf8')))
                   summary={'date':day,'produced':count,'private_drafts':published,'tiktok_posted':False,
-                           'pipeline':'R2 -> scene selection -> VSR OCR -> Groq -> FFmpeg + Piyaso PiP -> private R2'}
+                           'pipeline':'R2 -> manual single-use copy -> scene selection -> VSR OCR -> FFmpeg + Piyaso PiP -> private R2'}
                   put_once(s3,f'state/daily/{day}/result.json',json_bytes(summary),'application/json')
                   return summary
 
@@ -727,8 +672,6 @@ jobs:
               parser=argparse.ArgumentParser(description='Create 2 or 3 complete PRIVATE Piyaso TikTok ad videos daily')
               parser.add_argument('--date',default=dt.datetime.now(ZoneInfo('Europe/Istanbul')).date().isoformat())
               args=parser.parse_args()
-              if not os.getenv('GROQ_API_KEY'):
-                  parser.error('GROQ_API_KEY missing: real Groq copy is mandatory')
               s3=storage_client.client()
               result=create_day(s3,args.date)
               print('DAILY DRAFTS COMPLETE: '+json.dumps(result,ensure_ascii=False),flush=True)
