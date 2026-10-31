@@ -1,0 +1,64 @@
+# Piyaso TikTok manual copy inventory. Separate from Groq-based Instagram copy.
+name: Piyaso TikTok - Manuel reklam kutuphanesi
+
+on:
+  workflow_dispatch:
+    inputs:
+      action:
+        description: 'Yapilacak islem'
+        required: true
+        type: choice
+        options:
+          - add
+          - status
+        default: status
+      batch:
+        description: 'ADD: Her satira bir cumle, veya cumle || aciklama (maks. 200)'
+        required: false
+        type: string
+        default: ''
+
+permissions:
+  contents: read
+
+concurrency:
+  group: piyaso-daily-private-studio
+  cancel-in-progress: false
+
+jobs:
+  library:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    env:
+      R2_ASSETS_BUCKET: piyaso-tiktok-assets
+      R2_ENDPOINT: ${{ secrets.R2_ENDPOINT }}
+      R2_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
+      R2_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
+      MANUAL_BATCH: ${{ inputs.batch }}
+    steps:
+      - name: Mevcut projeyi getir
+        uses: actions/checkout@v4
+      - name: Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: R2, font ve render kutuphanelerini kur
+        run: python -m pip install -r requirements.txt
+      - name: Manuel reklam kutuphanesini yonet
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [[ '${{ inputs.action }}' == 'add' ]]; then
+            if [[ -z "${MANUAL_BATCH//[[:space:]]/}" ]]; then
+              echo 'Cümle listesi boş olamaz.' >&2
+              exit 2
+            fi
+            printf '%s\n' "$MANUAL_BATCH" | python manual_copy.py import --stdin
+          else
+            python manual_copy.py status
+          fi
+          {
+            echo '### TikTok manuel reklam kütüphanesi'
+            echo 'Yeni metinler eklenirken Groq çağrılmaz.'
+            echo 'Video üretimi yalnızca kütüphane doluyken çalışır.'
+          } >> "$GITHUB_STEP_SUMMARY"
