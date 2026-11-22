@@ -1,0 +1,51 @@
+name: Piyasoo - Buffer kanalini dogrula (yayin yok)
+on:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    env:
+      BUFFER_API_KEY: ${{ secrets.BUFFER_API_KEY }}
+      BUFFER_CHANNEL_ID: ${{ secrets.BUFFER_CHANNEL_ID }}
+    steps:
+      - name: Piyasoo kanal eslesmesini salt okunur dogrula
+        shell: python
+        run: |
+          import json, os
+          from urllib.request import Request, urlopen
+          expected = '6b02c34a8541f09ecb620771'
+          forbidden = '6ae4e4cd2f1f5ed648245667'
+          org = '6ae4ded72e28a1908213f2ba'
+          target = os.environ.get('BUFFER_CHANNEL_ID', '').strip()
+          if target != expected or target == forbidden:
+              raise SystemExit('FAIL: Piyasoo hedef kanali beklenen hesapla eslesmiyor; yayin yapilmadi.')
+          token = os.environ.get('BUFFER_API_KEY', '').strip()
+          if not token:
+              raise SystemExit('FAIL: BUFFER_API_KEY eksik.')
+          query = 'query { channels(input: {organizationId: ' + json.dumps(org) + '}) { id name service isQueuePaused } }'
+          req = Request('https://api.buffer.com', data=json.dumps({'query': query}).encode(),
+                        headers={'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json'}, method='POST')
+          try:
+              with urlopen(req, timeout=30) as response:
+                  result = json.load(response)
+          except Exception:
+              raise SystemExit('FAIL: Buffer salt okunur kanal sorgusu basarisiz; gizli degerler yazdirilmadi.')
+          if result.get('errors'):
+              raise SystemExit('FAIL: Buffer kanal sorgusunu reddetti.')
+          rows = (result.get('data') or {}).get('channels') or []
+          channel = next((c for c in rows if c.get('id') == target), None)
+          if not channel or str(channel.get('service', '')).lower() != 'tiktok':
+              raise SystemExit('FAIL: Beklenen Piyasoo TikTok kanali bu anahtarla bulunamadi.')
+          summary = chr(10).join([
+              'PASS: Piyasoo hedefi yeni TikTok kanalina eslesti.',
+              'Beklenen kanal ID: ' + expected,
+              'Kalben Gift hedefi kullanilmiyor.',
+              'Buffer erisimi salt okunur dogrulandi.',
+              'Hicbir medya, kullanim kaydi veya gonderi degistirilmedi.',
+              'Gercek paylasim testi yapilmadi.', ''])
+          print(summary)
+          with open(os.environ['GITHUB_STEP_SUMMARY'], 'a') as out:
+              out.write(summary)
