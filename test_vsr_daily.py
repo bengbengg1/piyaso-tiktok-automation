@@ -38,6 +38,20 @@ class DetectionOutcomes(unittest.TestCase):
             self.invoke(1, 'ImportError: missing model', output=b'partial')
         self.assertFalse(self.output.exists())
 
+    def test_buffered_progress_after_empty_ocr_is_not_a_new_failure(self):
+        log = ("raise Exception(tr['Main']['NoSubtitleDetected'].format(self.video_path))\n"
+               '\x1b[31mException: No subtitles detected. Check file: ' + str(self.source) +
+               '\x1b[0m\nSubtitle detection finished\n100% completed')
+        result = self.invoke(1, log)
+        self.assertFalse(result['text_removal_applied'])
+
+    def test_empty_ocr_then_another_exception_remains_blocked(self):
+        log = ("raise Exception(tr['Main']['NoSubtitleDetected'].format(self.video_path))\n"
+               'Exception: No subtitles detected. Check file: ' + str(self.source) +
+               '\nRuntimeError: broken model')
+        with self.assertRaises(RuntimeError):
+            self.invoke(1, log)
+
     def test_empty_text_mention_before_a_later_error_is_not_a_fallback(self):
         with self.assertRaises(RuntimeError):
             self.invoke(1, 'No subtitles detected\nRuntimeError: corrupted video')
