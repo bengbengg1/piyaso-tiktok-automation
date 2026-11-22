@@ -9,7 +9,7 @@ import render
 import creative_copy
 import approve_copies
 
-ROOT=Path(__file__).resolve().parents[1]
+ROOT=Path(__file__).resolve().parent
 
 class BrandVoiceTests(unittest.TestCase):
     def test_28_original_samples_preserved(self):

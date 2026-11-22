@@ -2,6 +2,7 @@ import json
 import os
 import sys
 import tempfile
+import subprocess
 import unittest
 from pathlib import Path
 from unittest.mock import patch
@@ -10,8 +11,18 @@ import scene_select
 import storage_client
 
 class ExtraTests(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        cls.temp = tempfile.TemporaryDirectory()
+        cls.addClassCleanup(cls.temp.cleanup)
+        cls.source = Path(cls.temp.name) / 'scene.mp4'
+        subprocess.run(['ffmpeg', '-nostdin', '-v', 'error', '-y', '-f', 'lavfi',
+                        '-i', 'testsrc2=size=160x288:rate=8:duration=5',
+                        '-c:v', 'libx264', '-pix_fmt', 'yuv420p', str(cls.source)],
+                       check=True, timeout=30)
+
     def test_scene_start_is_valid_and_deterministic(self):
-        source=Path(__file__).resolve().parents[1]/'assets'/'backgrounds'/'araba_ornek.mp4'
+        source=self.source
         a=scene_select.choose_start(source,window=2.)
         b=scene_select.choose_start(source,window=2.)
         self.assertEqual(a,b)
@@ -19,7 +30,7 @@ class ExtraTests(unittest.TestCase):
         self.assertLessEqual(a,3.)
 
     def test_small_footage_starts_at_zero(self):
-        source=Path(__file__).resolve().parents[1]/'assets'/'backgrounds'/'araba_ornek.mp4'
+        source=self.source
         self.assertEqual(scene_select.choose_start(source,window=100.),0.)
 
     def test_reject_untrusted_storage_url(self):

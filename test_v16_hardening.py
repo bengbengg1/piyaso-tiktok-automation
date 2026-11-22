@@ -4,7 +4,7 @@ import sys, unittest
 from pathlib import Path
 sys.path.insert(0,str(Path(__file__).resolve().parents[1]))
 import auto_text
-ROOT=Path(__file__).resolve().parents[1]
+ROOT=Path(__file__).resolve().parent
 
 class FixedTextTests(unittest.TestCase):
     def test_four_line_caption_is_one_removal_region(self):
@@ -33,15 +33,16 @@ class FixedTextTests(unittest.TestCase):
 
 class DeploymentGuards(unittest.TestCase):
     def test_public_repo_workflow_never_uses_persistent_runner(self):
-        workflow=(ROOT/'.github/workflows/daily.yml').read_text('utf-8')
+        workflow=(ROOT/'.github/workflows/piyaso-daily-studio.yml').read_text('utf-8')
         self.assertIn('runs-on: ubuntu-latest',workflow)
         self.assertNotIn('runs-on: self-hosted',workflow)
         self.assertNotIn('vars.VIDEO_RUNNER',workflow)
     def test_workflow_uses_one_bucket_only(self):
-        workflow=(ROOT/'.github/workflows/daily.yml').read_text('utf-8')
+        workflow=(ROOT/'.github/workflows/piyaso-daily-studio.yml').read_text('utf-8')
         self.assertNotIn('$R2_PUBLIC_BUCKET',workflow)
         self.assertNotIn('$R2_STATE_BUCKET',workflow)
-        self.assertIn("storage_client.bucket_name('public')",workflow)
+        self.assertIn('R2_ASSETS_BUCKET: piyaso-tiktok-assets',workflow)
+        self.assertIn("storage_client.bucket_name('assets')",workflow)
 
 if __name__ == '__main__': unittest.main()
 

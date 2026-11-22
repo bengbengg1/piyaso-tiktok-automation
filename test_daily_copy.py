@@ -1,6 +1,7 @@
 import datetime as dt
 import json
 import tempfile
+import shutil
 import unittest
 from pathlib import Path
 from unittest.mock import patch
@@ -12,7 +13,25 @@ import render
 
 
 class DailyCopyTests(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        import make_demo_assets
+        cls.temp = tempfile.TemporaryDirectory()
+        cls.addClassCleanup(cls.temp.cleanup)
+        cls.fixture_root = Path(cls.temp.name)
+        root = Path(__file__).resolve().parent
+        for source in root.glob('*.json'):
+            shutil.copyfile(source, cls.fixture_root / source.name)
+        # Isolated test-only fixtures; never read/write the real R2 videos.
+        for i, kind in enumerate(('araba', 'karaoke', 'sarki')):
+            make_demo_assets.make_bg(kind, i, cls.fixture_root / 'assets' / 'backgrounds' / (kind + '_ornek.mp4'))
+        make_demo_assets.make_app(cls.fixture_root / 'assets' / 'app_recording.mp4')
+
     def setUp(self):
+        for module in (daily_copy, render):
+            scoped = patch.object(module, 'ROOT', self.fixture_root)
+            scoped.start()
+            self.addCleanup(scoped.stop)
         self.date = dt.date(2026, 10, 30)  # Fri: 3 posts
         self.jobs, self.config = daily_copy.planned_jobs(self.date)
         self.style = render.load_json('style_examples.json')
@@ -127,7 +146,7 @@ class DailyCopyTests(unittest.TestCase):
                 if name == 'config.json':
                     value['text_removal'] = {'backend': 'delogo'}
                 return value
-            with patch.object(render, 'ROOT', Path(__file__).resolve().parents[1]), \
+            with patch.object(render, 'ROOT', self.fixture_root), \
                  patch.object(render, 'load_json', side_effect=test_config):
                 manifest = render.render_day(self.date, width=360, height=640, daily_copy_path=path)
             self.assertEqual(manifest['copy_source'], 'ai_generated')
