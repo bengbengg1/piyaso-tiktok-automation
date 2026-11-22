@@ -356,7 +356,7 @@ jobs:
 
           def put_once(s3, key, content, mime):
               from botocore.exceptions import ClientError
-              if not (key.startswith(('state/daily/','cache/piyaso_vsr/v2/','drafts/piyaso/'))
+              if not (key.startswith(('state/daily/','cache/piyaso_vsr/v3/','drafts/piyaso/'))
                       and '..' not in key and '\\' not in key):
                   raise ValueError('R2 path is not in a permitted PRIVATE production prefix')
               if not content:
@@ -428,8 +428,8 @@ jobs:
 
 
           def cache_key(source, start, duration):
-              raw = f'{source.identity}|{start:.2f}|{duration:.2f}|{CANVAS[0]}x{CANVAS[1]}|{FPS}|sttn-det|v2'
-              return 'cache/piyaso_vsr/v2/' + hashlib.sha256(raw.encode()).hexdigest()[:32] + '/'
+              raw = f'{source.identity}|{start:.2f}|{duration:.2f}|{CANVAS[0]}x{CANVAS[1]}|{FPS}|sttn-det|v3'
+              return 'cache/piyaso_vsr/v3/' + hashlib.sha256(raw.encode()).hexdigest()[:32] + '/'
 
 
           def percent_changed(before, after, seconds):
@@ -483,11 +483,12 @@ jobs:
                    '-vf',f'scale={CANVAS[0]}:{CANVAS[1]}:force_original_aspect_ratio=increase,crop={CANVAS[0]}:{CANVAS[1]},fps={FPS},setsar=1',
                    '-an','-c:v','libx264','-preset','ultrafast','-crf','19','-pix_fmt','yuv420p',str(normal)],timeout=300)
               # No hand-drawn coordinates. The upstream PaddleOCR detector handles changing text.
-              run([py,str(backend),'-i',str(normal),'-o',str(noaudio),'--inpaint-mode','sttn-det'],timeout=4800)
+              from vsr_daily import clean_or_detect_empty
+              detection=clean_or_detect_empty(py,backend,normal,noaudio,timeout=4800)
               model_out=probe(noaudio)
               if model_out['duration']<duration-.6 or (model_out['width'],model_out['height'])!=CANVAS:
                   raise RuntimeError('VSR produced a truncated or incorrectly sized clip')
-              measured=percent_changed(normal,noaudio,duration)
+              measured=percent_changed(normal,noaudio,duration) if detection['text_removal_applied'] else 0.0
               # Original music/voice is taken from the SOURCE with the exact selected time offset.
               run(['ffmpeg','-nostdin','-hide_banner','-loglevel','error','-y',
                    '-i',str(noaudio),'-ss',str(start),'-t',str(duration),'-i',str(raw),
@@ -498,7 +499,8 @@ jobs:
                   raise RuntimeError('Cleaned output lost required frames or source audio')
               report={'source_key':source.key,'source_identity':source.identity,'start_seconds':round(start,2),
                       'seconds':round(duration,2),'model':'VSR STTN-DET','mean_luma_change':measured,
-                      'result':'AI ran; manual visual quality not certified','copyright_review_required':True}
+                      'result':'OCR ran; manual visual quality not certified','copyright_review_required':True,
+                      **detection}
               put_once(s3,key+'cleaned.mp4',clip.read_bytes(),'video/mp4')
               put_once(s3,key+'receipt.json',json_bytes(report),'application/json')
               return clip,report
@@ -648,7 +650,9 @@ jobs:
                       commercial=json.loads(rights).get('backgrounds',{}).get(source.name,{}).get('commercial_use_authorized') is True
                       receipt={'date':day,'status':'draft_ready','slot':slot,'source_key':source.key,
                                'source_identity':source.identity,'source_seconds':report['seconds'],
-                               'ai_video_cleaned':True,'real_piyaso_screen_recording':True,
+                               'ai_video_cleaned':report['text_removal_applied'],
+                               'text_detection_status':report['text_detection_status'],
+                               'real_piyaso_screen_recording':True,
                                'manual_copy':manifest['copy_source']=='manual_library',
                                'caption':item['caption'],'commercial_rights_confirmed':commercial,
                                'human_quality_review_required':True, 'publish_allowed':False,
